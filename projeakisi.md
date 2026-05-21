@@ -77,7 +77,14 @@ Projenin akademik ve teknik altyapısını oluşturmak amacıyla yapılan kapsam
 **AbdulKadir Demir:** Öneri Algoritması Araştırması ve Değerlendirmesi yapıldı.
 Görev 2 ✅
 
-**İsmail Özdemir:** 
+**İsmail Özdemir:** ✅ Görev 2 Tamamlandı: PostgreSQL Veritabanı Şema Tasarımı
+Proje veri gereksinimlerine uygun olarak PostgreSQL için veritabanı şema tasarımı oluşturuldu.
+Gerçekleştirilen Teknik Detaylar:
+
+Tablo Tasarımı: users, products, categories, orders, order_items ve ratings olmak üzere 6 tablo tasarlandı.
+İlişkiler: Tablolar arasındaki foreign key ilişkileri belirlendi ve diyagrama yansıtıldı.
+Diyagram: dbdiagram.io aracı kullanılarak görsel şema diyagramı oluşturuldu ve PNG olarak dışa aktarıldı.
+Yükleme: Şema diyagramı GitHub reposuna yüklendi.
 
 **Sema Elmahmud:** ✅ Görev 2 Tamamlandı: Veri Seti Keşfi ve Ön İşleme Planlaması
 Hatalı yazımları giderilmiş, veri tipleri düzeltilmiş ve farklı tabloları anlamlı bir şekilde birbirine bağlanmış, temiz bir veri seti yapısı oluşturmuş oldum.
@@ -100,7 +107,15 @@ E-ticaret öneri sisteminin kullanıcı arayüzü (UI) ve kullanıcı deneyimi (
 
 ## 3. Hafta
 
-**İsmail Özdemir:** 
+**İsmail Özdemir:** ✅ Görev 3 Tamamlandı: Kullanıcı Arayüzü Entegrasyon Planı
+Geliştirilen ürün öneri sisteminin mevcut e-ticaret platformu kullanıcı arayüzüne nasıl entegre edileceği planlandı ve dokümante edildi.
+Gerçekleştirilen Teknik Detaylar:
+
+Entegrasyon Mimarisi: Flask REST API ile frontend arasındaki veri akışı tasarlandı.
+Görüntülenme Yerleri: Önerilerin ana sayfa, ürün detay sayfası, sepet sayfası ve arama sonuçlarında nasıl gösterileceği belirlendi.
+Kullanıcı Takibi: Google Analytics 4 ve özel event logging ile tıklama ve satın alma takibi planlandı.
+A/B Testi: Öneri konumu, sayısı ve başlık testleri için strateji oluşturuldu.
+Yükleme: ui_entegrasyon_plani.md dosyası GitHub reposuna yüklendi.
 
 **AbdulKadir Demir:** Modelin performansını değerlendirmek için kullanılan metrikler (kesinlik, doğruluk, F1 skoru vb.) analiz edildi  ve sonuçları raporlandı. 
 
@@ -128,7 +143,16 @@ Veri setindeki gürültüyü ve eksiklikleri gidermek için Pandas ile otomatik 
 
 ## 4. Hafta
 
-**İsmail Özdemir:** 
+**İsmail Özdemir:** ✅ Görev 4 Tamamlandı: Kullanıcı Arayüzü Geliştirme ve Flask API Entegrasyonu
+Flask API'den alınan ürün önerilerini görüntüleyen, kullanıcı etkileşimini destekleyen ve CSS ile stillendirilmiş bir web arayüzü geliştirildi.
+Gerçekleştirilen Teknik Detaylar:
+
+API Entegrasyonu: GET /api/v1/recommendations/{user_id} endpoint'i arayüze bağlandı; benzerlik skoru 0.70 eşiği uygulandı.
+Ürün Kartları: Her ürün için kategori, ad ve benzerlik skoru yüzde olarak gösterildi.
+Detay Modalı: Ürüne tıklanınca açılan etkileşimli detay penceresi eklendi.
+Yedek Sistem: API kapalıyken sistem otomatik olarak örnek veriye geçecek şekilde tasarlandı.
+CSS Tasarımı: Koyu tema, animasyonlar ve duyarlı (responsive) yapı ile modern bir arayüz oluşturuldu.
+Yükleme: index.html dosyası GitHub reposuna yüklendi.
 
 **AbdulKadir Demir:** Basit İçerik Tabanlı Öneri Algoritmasının Uygulanması --> Scikit-learn kütüphanesi kullanılarak ürün açıklamaları ve özelliklerine göre basit bir içerik tabanlı öneri algoritması geliştirildi. TF-IDF veya CountVectorizer gibi yöntemlerle ürün açıklamaları vektörleştirildi ve benzerlik matrisi oluşturuldu.
 Görev 4 ✅
@@ -172,7 +196,14 @@ python main.py
 
 ## 5. Hafta
 
-**İsmail Özdemir:** 
+**İsmail Özdemir:** ✅ Görev 5 Tamamlandı: Müşteri Davranışları Analiz Raporu
+Müşteri davranışları ve ürün özellikleri analiz sonuçlarını sunan kapsamlı bir rapor şablonu tasarlandı ve gerçek veri ile dolduruldu.
+Gerçekleştirilen Teknik Detaylar:
+
+Veri Analizi: 12.330 kayıtlık Online Shoppers Intention veri seti incelendi.
+Model Karşılaştırması: Lojistik Regresyon ve XGBoost modelleri karşılaştırıldı; XGBoost %90 doğrulukla seçildi.
+Görselleştirme: Satın alma dağılımı, aykırı değer analizi ve karışıklık matrisi tabloları oluşturuldu.
+Rapor: PDF formatında rapor_sablonu.pdf dosyası GitHub reposuna yüklendi.
 
 
 **AbdulKadir Demir:** Model Performansını Artırmak İçin Yeni Özellikler Geliştirildi. 
@@ -211,7 +242,15 @@ Bu optimizasyonlar neticesinde öneri motorunun isabet oranı (Hit Rate) ve kull
 
 ## 6. Hafta
 
-**İsmail Özdemir:** 
+**İsmail Özdemir:** ✅ Görev 6 Tamamlandı: A/B Testi Analizi ve Proje Değerlendirmesi
+Farklı ürün öneri stratejileri A/B testleri ile karşılaştırıldı ve proje boyunca elde edilen sonuçlar kapsamlı şekilde değerlendirildi.
+Gerçekleştirilen Teknik Detaylar:
+
+A/B Testi: 3 farklı test senaryosu (oneri konumu, sayısı, başlık metni) tasarlandı ve sonuçları analiz edildi.
+Kazanan Strateji: Sağda 4 ürünlük panel ve "Sizin İçin Seçtik" başlığı en yüksek CTR (%8.7) sağladı.
+Optimizasyon: Test sonuçlarına göre sistem konfigürasyonu güncellendi.
+Proje Değerlendirmesi: Güçlü/zayıf yönler, öğrenilen dersler ve gelecek önerileri raporlandı.
+Yükleme: ab_testi_raporu.pdf ve proje_degerlendirme_raporu.pdf GitHub reposuna yüklendi.
 
 **AbdulKadir Demir:** Modelin performansını değerlendirmek için kullanılan metrikler (kesinlik, doğruluk, F1 skoru vb.) analiz edildi ve sonuçlar raporlandı. 
 
