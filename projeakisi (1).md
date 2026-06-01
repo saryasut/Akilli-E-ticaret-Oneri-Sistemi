@@ -117,7 +117,29 @@ Geliştirilen ürün öneri sisteminin mevcut e-ticaret platformu kullanıcı ar
 **Sema Elmahmud:**  ✅ Görev 3 Tamamlandı: Veri Ön İşleme ve Temizleme Modülünün Geliştirilmesi
 Veri setindeki gürültüyü ve eksiklikleri gidermek için Pandas ile otomatik bir temizleme modülü yazdım. Bu modülle; eksik verileri tamamladım, aykırı değerleri (outliers) IQR yöntemiyle eledim ve veri tiplerini optimize ettim. Sonuç olarak, veriyi modellemeye hazır, yüksek performanslı Parquet formatında dışa aktardım.
 
-**Elif Babürhan:**  
+**Elif Babürhan:**  ✅ Görev 3 Tamamlandı: # Flask + Scikit-learn Ürün Öneri Sistemi
+
+## Amaç
+Flask kullanarak REST API geliştirmek ve Scikit-learn ile ürün öneri sistemi oluşturmak.
+
+## Yapılanlar
+- Flask ile API kuruldu
+- `/recommendations` endpoint’i oluşturuldu
+- Kosinüs benzerliği ile öneri algoritması geliştirildi
+- Model `.pkl` olarak kaydedildi ve API’ye entegre edildi
+- Threshold ve top_n parametreleri eklendi
+- Fallback (model yoksa statik veri) sistemi kuruldu
+
+## Testler
+- `/` ana sayfa çalıştı
+- `/api/v1/recommendations/<user_id>` öneri döndürdü
+- Parametreli sorgular test edildi
+
+## Teknolojiler
+Flask, Scikit-learn, Pandas, NumPy, Joblib
+
+## Sonuç
+Çalışan bir REST API tabanlı ürün öneri sistemi geliştirilmiştir.
 
 **Sarya Su Toğyıldız:** ✅ Görev 3 Tamamlandı: REST API Tasarımı ve Spesifikasyonu
 
