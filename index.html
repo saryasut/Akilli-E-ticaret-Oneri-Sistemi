@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akıllı Öneri Sistemi - E-Ticaret Vitrini</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .recommendation-section { margin-top: 3rem; margin-bottom: 3rem; }
+        .section-title { font-weight: 700; color: #333; position: relative; margin-bottom: 2rem; }
+        .section-title::after { content: ''; width: 60px; height: 4px; background: #667eea; position: absolute; bottom: -8px; left: 0; border-radius: 2px; }
+
+        .product-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            background: #fff;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        .image-container { position: relative; overflow: hidden; background: #f1f1f1; }
+        .product-img { width: 100%; height: 200px; object-fit: cover; transition: transform 0.5s ease; }
+        .product-card:hover .product-img { transform: scale(1.08); }
+        .badge-rating {
+            position: absolute; top: 10px; right: 10px;
+            background: rgba(255,255,255,0.9); color: #ff9800;
+            font-weight: bold; padding: 4px 8px; border-radius: 20px;
+            font-size: 0.85rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .card-body { padding: 1.25rem; display: flex; flex-direction: column; flex-grow: 1; }
+        .product-name {
+            font-size: 1.05rem; font-weight: 600; color: #2d3748;
+            margin-bottom: 0.5rem; text-decoration: none;
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden; height: 3rem;
+        }
+        .product-name:hover { color: #667eea; }
+        .price-tag { font-size: 1.3rem; font-weight: 700; color: #2b6cb0; margin-top: auto; margin-bottom: 1rem; }
+        .btn-cart {
+            background: #667eea; color: white; border: none;
+            border-radius: 10px; padding: 10px; font-weight: 600;
+            transition: background 0.2s; width: 100%; cursor: pointer;
+        }
+        .btn-cart:hover { background: #5a6fd6; color: white; }
+        .btn-cart:disabled { background: #a0aec0; cursor: not-allowed; }
+
+        /* Mobil yatay kaydırma - Bootstrap row ile çakışmayı önlemek için ayrı wrapper */
+        @media (max-width: 768px) {
+            .mobile-scroll-wrapper {
+                display: flex;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                padding-bottom: 15px;
+                gap: 15px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .mobile-scroll-wrapper .scroll-item {
+                flex: 0 0 78%;
+                scroll-snap-align: start;
+            }
+            /* Mobilde Bootstrap grid devre dışı */
+            .mobile-scroll-wrapper .col-12,
+            .mobile-scroll-wrapper .col-md-6,
+            .mobile-scroll-wrapper .col-lg-3 {
+                flex: 0 0 78% !important;
+                max-width: 78% !important;
+                padding: 0;
+            }
+        }
+        /* Placeholder SVG resim fallback */
+        .product-img[src=""] { visibility: hidden; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#"><i class="fa-solid fa-brain me-2"></i> Akıllı Alışveriş</a>
+            <span class="navbar-text text-white-50">Kullanıcı ID: <strong id="current-user">42</strong></span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="bg-white p-4 p-md-5 rounded shadow-sm my-4 text-center" style="border-left: 5px solid #667eea;">
+            <h1 class="display-6 fw-bold text-dark">Hoş Geldiniz! 👋</h1>
+            <p class="lead text-muted">Yapay zekâ destekli sistemimiz, ilgi alanlarınıza özel en iyi fırsatları sizin için listeliyor.</p>
+        </div>
+
+        <div class="recommendation-section">
+            <h3 class="section-title"><i class="fa-solid fa-wand-magic-sparkles text-warning me-2"></i> Sizin İçin Seçtiklerimiz</h3>
+
+            <!-- aria-live: ekran okuyucular için dinamik içerik değişimini bildirir -->
+            <div id="recommendations-wrapper" aria-live="polite" aria-atomic="false">
+                <div id="recommendations-container" class="row g-4">
+                    <div class="text-center my-5 w-100" id="loading-spinner" role="status">
+                        <div class="spinner-border text-primary" aria-hidden="true"></div>
+                        <p class="mt-2 text-muted">Kişiselleştirilmiş önerileriniz hazırlanıyor...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="action-toast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toast-message">Eylem kaydedildi!</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Kapat"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const USER_ID = 42;
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+
+        // Placeholder SVG oluşturucu — dış servise bağımlılığı ortadan kaldırır
+        function placeholderSVG(text) {
+            const encoded = encodeURIComponent(
+                `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200">
+                    <rect width="300" height="200" fill="#e2e8f0"/>
+                    <text x="150" y="105" font-family="sans-serif" font-size="14"
+                          fill="#94a3b8" text-anchor="middle">${text || 'Görsel Yok'}</text>
+                </svg>`
+            );
+            return 'data:image/svg+xml,' + encoded;
+        }
+
+        // XSS'e karşı güvenli metin temizleme
+        function sanitize(str) {
+            if (str == null) return '';
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(String(str)));
+            return div.innerHTML;
+        }
+
+        // Fiyatı güvenli biçimde biçimlendirme
+        function formatPrice(price) {
+            const num = parseFloat(price);
+            if (isNaN(num)) return '—';
+            return num.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchRecommendations(USER_ID);
+        });
+
+        // ————————————————————————————————————————
+        // ADIM 1: API'den önerileri çek ve listele
+        // ————————————————————————————————————————
+        function fetchRecommendations(userId) {
+            const container = document.getElementById('recommendations-container');
+
+            fetch(`${API_BASE_URL}/recommendations/${userId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Sunucu yanıt kodu: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(products => {
+                    // Spinner'ı temizle
+                    container.innerHTML = '';
+
+                    if (!Array.isArray(products) || products.length === 0) {
+                        container.innerHTML = '<p class="text-muted text-center w-100 my-4">Şu an için size özel bir öneri üretemedik.</p>';
+                        return;
+                    }
+
+                    // Mobil için sarmalayıcı oluştur
+                    const isMobile = window.innerWidth <= 768;
+                    if (isMobile) {
+                        container.classList.remove('row', 'g-4');
+                        container.classList.add('mobile-scroll-wrapper');
+                    }
+
+                    // Her ürün için DOM düğümü oluştur (innerHTML += yerine createElement — XSS güvenli)
+                    products.forEach(product => {
+                        // API'nin döndürebileceği farklı alan adlarına karşı fallback
+                        const productId   = product.product_id ?? product.id ?? '';
+                        const productName = product.product_name ?? product.name ?? product.title ?? 'İsimsiz Ürün';
+                        const imageUrl    = product.resim_url ?? product.image_url ?? product.image ?? '';
+                        const rating      = product.puan ?? product.rating ?? '4.5';
+                        const reviewCount = product.degerlendirme_sayisi ?? product.review_count ?? 0;
+                        const price       = product.price ?? product.fiyat ?? 0;
+
+                        const col = document.createElement('div');
+                        col.className = 'col-12 col-md-6 col-lg-3';
+
+                        // Kart şablonunu güvenli DOM API ile oluştur
+                        col.innerHTML = `
+                            <div class="product-card">
+                                <div class="image-container">
+                                    <img
+                                        src="${sanitize(imageUrl) || placeholderSVG(productName)}"
+                                        class="product-img"
+                                        alt="${sanitize(productName)}"
+                                        loading="lazy"
+                                        onerror="this.src='${placeholderSVG(productName)}'"
+                                    >
+                                    <div class="badge-rating" aria-label="Puan: ${sanitize(rating)}, ${sanitize(reviewCount)} değerlendirme">
+                                        <i class="fa-solid fa-star" aria-hidden="true"></i>
+                                        ${sanitize(rating)} (${sanitize(reviewCount)})
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <a href="#" class="product-name" data-product-id="${sanitize(productId)}" data-action="click">
+                                        ${sanitize(productName)}
+                                    </a>
+                                    <div class="price-tag">${formatPrice(price)} TL</div>
+                                    <button
+                                        class="btn-cart"
+                                        data-product-id="${sanitize(productId)}"
+                                        data-action="cart"
+                                        aria-label="${sanitize(productName)} ürününü sepete ekle"
+                                    >
+                                        <i class="fa-solid fa-cart-plus me-2" aria-hidden="true"></i> Sepete Ekle
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+
+                        container.appendChild(col);
+                    });
+
+                    // Olay dinleyicilerini event delegation ile tek noktadan yönet (inline onclick yok)
+                    container.addEventListener('click', handleCardAction);
+                })
+                .catch(error => {
+                    console.error('Öneriler yüklenirken hata:', error);
+                    const spinner = document.getElementById('loading-spinner');
+                    if (spinner) spinner.remove();
+                    container.innerHTML = `
+                        <div class="alert alert-danger w-100 text-center" role="alert">
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                            Önerileriniz yüklenemedi. Lütfen backend sunucusunun çalıştığından emin olun.
+                            <br><small class="text-muted">${sanitize(error.message)}</small>
+                        </div>
+                    `;
+                });
+        }
+
+        // ————————————————————————————————————————————————————————
+        // ADIM 2: Event delegation — tüm kart tıklamaları buradan
+        // ————————————————————————————————————————————————————————
+        function handleCardAction(e) {
+            const target = e.target.closest('[data-action]');
+            if (!target) return;
+
+            e.preventDefault();
+
+            const productId  = target.dataset.productId;
+            const actionType = target.dataset.action;
+
+            if (!productId) return;
+
+            // Sepete ekle butonunu geçici olarak devre dışı bırak (çift tıklamayı önler)
+            if (actionType === 'cart') {
+                target.disabled = true;
+                setTimeout(() => { target.disabled = false; }, 2000);
+            }
+
+            trackUserAction(USER_ID, productId, actionType);
+        }
+
+        // ———————————————————————————————————————————————
+        // ADIM 3: Kullanıcı etkileşimini backend'e bildir
+        // ———————————————————————————————————————————————
+        function trackUserAction(userId, productId, actionType) {
+            const payload = {
+                user_id:    parseInt(userId, 10),
+                product_id: String(productId),
+                type:       actionType
+            };
+
+            fetch(`${API_BASE_URL}/track-action`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`Tracking başarısız, kod: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Etkileşim loglandı:', data);
+                const msg = actionType === 'click'
+                    ? 'Ürün incelemesi algoritmaya iletildi 🎯'
+                    : 'Ürün sepete eklendi 🛒';
+                showToast(msg, 'success');
+            })
+            .catch(error => {
+                console.error('Tracking hatası:', error);
+                // Tracking hatası kullanıcı deneyimini bozmasın; sessizce logla
+            });
+        }
+
+        // ———————————————————————————————
+        // Yardımcı: Toast bildirimi göster
+        // ———————————————————————————————
+        function showToast(message, type = 'success') {
+            const toastEl = document.getElementById('action-toast');
+            document.getElementById('toast-message').innerText = message;
+
+            // Rengi tiype göre güncelle
+            toastEl.className = `toast align-items-center text-white border-0 bg-${type}`;
+
+            const toast = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 3000 });
+            toast.show();
+        }
+    </script>
+</body>
+</html>
