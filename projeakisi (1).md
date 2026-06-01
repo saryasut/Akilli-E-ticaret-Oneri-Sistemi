@@ -174,7 +174,33 @@ Flask API'den alınan ürün önerilerini görüntüleyen, kullanıcı etkileşi
 
 Bu hafta proje sunumu için veri görselleştirme çalışmaları tamamlandı ve kullanıcı davranışlarını analiz eden grafikler oluşturuldu. Elde edilen sonuçlar düzenlenerek raporlama süreci tamamlandı ve sunuma hazır hale getirildi.
 
-**Elif Babürhan:**  
+**Elif Babürhan:** ✅ Görev 5 Tamamlandı : # E-Ticaret Öneri Sistemi Projesi
+
+Bu proje kapsamında kullanıcı davranışlarını analiz ederek ürün önerileri sunabilen bir E-Ticaret Öneri Sistemi geliştirilmiştir. Sistem Flask tabanlı bir backend yapısı ve web arayüzü ile çalışmaktadır.
+
+## Yapılan Çalışmalar
+
+### Flask Uygulamasının Başlatılması ve Test Edilmesi
+- Flask geliştirme ortamı kuruldu.
+- `app.py` dosyası oluşturuldu.
+- Uygulama başarıyla çalıştırılarak test edildi.
+
+### Frontend-Backend Hata Ayıklama ve Çözümleri
+- API bağlantı hataları incelendi.
+- Veri alışverişi ve JSON yanıtları kontrol edildi.
+
+### Flask-CORS Hatasının Çözülmesi ve API Testleri
+- Flask-CORS yapılandırması gerçekleştirildi.
+- Cross-origin erişim sorunları çözüldü.
+
+### Yapılan Dosya Düzenlemeleri
+- `app.py` dosyası güncellendi.
+- `templates` klasörü oluşturuldu.
+- `templates/index.html` dosyası geliştirildi.
+- Frontend ve backend entegrasyonu tamamlandı.
+
+## Sonuç
+Proje kapsamında Flask tabanlı çalışan bir E-Ticaret Öneri Sistemi için temel altyapı oluşturulmuş, frontend ve backend entegrasyonu sağlanmış ve kullanıcı deneyimini geliştiren iyileştirmeler yapılmıştır. Sistem öneri algoritmalarının eklenmesi ve geliştirilmesi için hazır hale getirilmiştir.
 
 **Sarya Su Toğyıldız:**  ✅ Görev 5 Tamamlandı: Öneri Algoritmasının Hassasiyet ve Doğruluğunu Artırma
 
