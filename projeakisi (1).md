@@ -208,7 +208,10 @@ Bu optimizasyonlar neticesinde öneri motorunun isabet oranı (Hit Rate) ve kull
 
 **Sema Elmahmud:** 
 
-**Elif Babürhan:**  
+**Elif Babürhan:**   ✅ Görev 6 Tamamlandı :## Sunum Provası ve Hazırlık
+- Ekip üyelerinden geri bildirimler toplandı.
+- Sunumun akıcılığı ve anlaşılırlığı artırmak için gerekli düzenlemeler yapıldı.
+- Sunum içeriği gözden geçirilerek final hazırlıkları tamamlandı.
 
 **Sarya Su Toğyıldız:**  ✅ Görev 6 Tamamlandı: Dokümantasyon ve Final Kontroller
 
