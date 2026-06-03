@@ -1,644 +1,285 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Akıllı E-Ticaret Öneri Sistemi</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-  <style>
-    :root {
-      --bg: #0a0a0f;
-      --surface: #13131a;
-      --card: #1a1a24;
-      --border: #2a2a38;
-      --accent: #f0c040;
-      --text: #f0ede8;
-      --muted: #8a8799;
-      --green: #4caf82;
-      --red: #e05a2b;
-      --radius: 16px;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      min-height: 100vh;
-    }
-
-    /* HEADER */
-    header {
-      padding: 24px 48px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      background: rgba(10,10,15,0.95);
-      backdrop-filter: blur(16px);
-      z-index: 100;
-    }
-
-    .logo {
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: 1.3rem;
-      letter-spacing: -0.03em;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .logo-dot {
-      width: 10px; height: 10px;
-      background: var(--accent);
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-
-    nav { display: flex; gap: 32px; }
-    nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
-    nav a:hover { color: var(--text); }
-
-    /* HERO */
-    .hero {
-      padding: 72px 48px 48px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .hero-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(240,192,64,0.1);
-      border: 1px solid rgba(240,192,64,0.25);
-      color: var(--accent);
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 6px 14px;
-      border-radius: 100px;
-      margin-bottom: 24px;
-    }
-
-    .hero h1 {
-      font-family: 'Syne', sans-serif;
-      font-size: clamp(2.2rem, 5vw, 3.6rem);
-      font-weight: 800;
-      line-height: 1.1;
-      letter-spacing: -0.04em;
-      max-width: 650px;
-    }
-
-    .hero h1 span { color: var(--accent); }
-
-    .hero p {
-      color: var(--muted);
-      font-size: 1rem;
-      margin-top: 16px;
-      max-width: 480px;
-      line-height: 1.7;
-    }
-
-    /* USER BAR */
-    .user-bar {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 48px 40px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .user-bar label { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
-
-    .user-bar select {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 10px 20px;
-      border-radius: 100px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
-      cursor: pointer;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .user-bar select:focus { border-color: var(--accent); }
-
-    .btn-refresh {
-      background: var(--accent);
-      color: #0a0a0f;
-      border: none;
-      padding: 10px 24px;
-      border-radius: 100px;
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: transform 0.2s, opacity 0.2s;
-    }
-
-    .btn-refresh:hover { transform: scale(1.04); }
-    .btn-refresh:active { transform: scale(0.97); }
-
-    .api-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.8rem;
-      color: var(--muted);
-      padding: 6px 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-    }
-
-    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
-    .status-dot.error { background: var(--red); }
-
-    /* API INFO */
-    .api-info {
-      max-width: 1200px;
-      margin: 0 auto 36px;
-      padding: 0 48px;
-    }
-
-    .api-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--accent);
-      border-radius: var(--radius);
-      padding: 16px 20px;
-      font-size: 0.82rem;
-      color: var(--muted);
-      line-height: 1.7;
-    }
-
-    .api-box code {
-      background: rgba(240,192,64,0.1);
-      color: var(--accent);
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-family: monospace;
-      font-size: 0.8rem;
-    }
-
-    /* SECTION */
-    .section {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 48px 80px;
-    }
-
-    .section-header {
-      display: flex;
-      align-items: baseline;
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-
-    .section-title {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.4rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
-    .section-count {
-      font-size: 0.8rem;
-      color: var(--muted);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 3px 10px;
-      border-radius: 100px;
-    }
-
-    /* GRID */
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 20px;
-    }
-
-    /* CARD */
-    .product-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      cursor: pointer;
-      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
-      animation: fadeUp 0.5s ease both;
-      text-decoration: none;
-      color: inherit;
-      display: block;
-    }
-
-    .product-card:hover {
-      transform: translateY(-6px);
-      border-color: rgba(240,192,64,0.4);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    }
-
-    .card-img {
-      width: 100%;
-      aspect-ratio: 4/3;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 3.2rem;
-    }
-
-    .card-img.elektronik { background: linear-gradient(135deg, #0f3460, #16213e); }
-    .card-img.hobi       { background: linear-gradient(135deg, #1a2e1a, #2d4a22); }
-    .card-img.default    { background: linear-gradient(135deg, #1a1a2e, #2a1a3e); }
-
-    .card-body { padding: 18px; }
-
-    .card-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .card-category {
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
-
-    .score-badge {
-      font-size: 0.72rem;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 100px;
-      background: rgba(76,175,130,0.15);
-      color: var(--green);
-      border: 1px solid rgba(76,175,130,0.3);
-    }
-
-    .card-title {
-      font-family: 'Syne', sans-serif;
-      font-size: 1rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      line-height: 1.3;
-      margin-bottom: 6px;
-    }
-
-    .card-id { font-size: 0.75rem; color: var(--muted); margin-bottom: 14px; }
-
-    .card-btn {
-      background: rgba(240,192,64,0.12);
-      border: 1px solid rgba(240,192,64,0.25);
-      color: var(--accent);
-      padding: 8px 16px;
-      border-radius: 100px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-      font-family: 'DM Sans', sans-serif;
-      width: 100%;
-      text-align: center;
-    }
-
-    .card-btn:hover { background: rgba(240,192,64,0.22); }
-
-    /* MODAL */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.75);
-      backdrop-filter: blur(8px);
-      z-index: 200;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s;
-    }
-
-    .modal-overlay.active { opacity: 1; pointer-events: all; }
-
-    .modal {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      max-width: 520px;
-      width: 100%;
-      padding: 36px;
-      transform: translateY(20px);
-      transition: transform 0.25s;
-    }
-
-    .modal-overlay.active .modal { transform: translateY(0); }
-
-    .modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-
-    .modal-category { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
-
-    .modal-close {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      width: 32px; height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: color 0.2s;
-    }
-
-    .modal-close:hover { color: var(--text); }
-    .modal-emoji { font-size: 4rem; margin-bottom: 16px; }
-
-    .modal-title {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.7rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      margin-bottom: 12px;
-    }
-
-    .modal-meta { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-
-    .modal-tag {
-      font-size: 0.78rem;
-      padding: 4px 12px;
-      border-radius: 100px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--muted);
-    }
-
-    .modal-desc { color: var(--muted); line-height: 1.7; font-size: 0.9rem; margin-bottom: 28px; }
-
-    .modal-actions { display: flex; gap: 12px; }
-
-    .btn-primary {
-      flex: 1;
-      background: var(--accent);
-      color: #0a0a0f;
-      border: none;
-      padding: 14px;
-      border-radius: 12px;
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
-
-    .btn-primary:hover { opacity: 0.88; }
-
-    .btn-secondary {
-      padding: 14px 20px;
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      border-radius: 12px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: border-color 0.2s, color 0.2s;
-    }
-
-    .btn-secondary:hover { border-color: var(--text); color: var(--text); }
-
-    .loading, .error-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      padding: 60px;
-      color: var(--muted);
-      font-size: 0.9rem;
-      grid-column: 1 / -1;
-    }
-
-    .error-state { color: var(--red); }
-
-    .spinner {
-      width: 36px; height: 36px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 28px 48px;
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.82rem;
-    }
-
-    @keyframes spin    { to { transform: rotate(360deg); } }
-    @keyframes pulse   { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.5; transform:scale(1.4); } }
-    @keyframes fadeUp  { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
-
-    @media (max-width: 768px) {
-      header, .hero, .user-bar, .section, .api-info { padding-left: 20px; padding-right: 20px; }
-      .hero { padding-top: 40px; }
-      nav { display: none; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ShopAI — Yapay zeka destekli akıllı e-ticaret öneri sistemi. Kişiselleştirilmiş ürün önerileri ile alışveriş deneyiminizi yeniden keşfedin.">
+    <title>ShopAI | Akıllı E-Ticaret Öneri Sistemi</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<header>
-  <div class="logo"><div class="logo-dot"></div>ShopAI</div>
-  <nav>
-    <a href="#">Ana Sayfa</a>
-    <a href="#">Ürünler</a>
-    <a href="#">Sepet</a>
-    <a href="#">Profil</a>
-  </nav>
-</header>
-
-<div class="hero">
-  <div class="hero-tag">✦ Yapay Zeka Destekli</div>
-  <h1>Size Özel <span>Ürün Önerileri</span></h1>
-  <p>Alışveriş geçmişiniz ve ilgi alanlarınıza göre kişiselleştirilmiş ürünleri keşfedin.</p>
+<!-- ═══════════════════════════════════════════════
+     1. WELCOME VIEW
+     ═══════════════════════════════════════════════ -->
+<div id="welcome-view" class="view active">
+    <nav class="welcome-nav" id="welcomeNav">
+        <a href="#" class="logo"><div class="logo-icon">⚡</div>Shop<span>AI</span></a>
+        <div class="nav-right">
+            <button class="btn btn-login" id="loginOpenBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                Giriş Yap
+            </button>
+        </div>
+    </nav>
+    <section class="hero-section">
+        <div class="hero-badge">✨ Yapay Zeka Destekli Öneri Motoru</div>
+        <h1 class="hero-title">Alışveriş Deneyiminizi<br><span class="text-gradient">Yeniden Tanımlayın</span></h1>
+        <p class="hero-subtitle">Milyonlarca veri noktası analiz edilerek, sadece size özel hazırlanan vitrini keşfedin. Müşteri davranışlarınızı anlayan yapay zeka ile tanışın.</p>
+        <div class="hero-cta">
+            <button class="btn btn-gradient" id="heroLoginBtn">🚀 Hemen Başlayın</button>
+            <button class="btn btn-secondary" id="heroLearnBtn">Nasıl Çalışır?</button>
+        </div>
+    </section>
+    <section class="features-section">
+        <p class="section-label">Neler Sunuyoruz?</p>
+        <h2 class="section-heading">Akıllı Alışverişin Geleceği</h2>
+        <div class="features-grid">
+            <div class="feature-card glass-card"><div class="feature-icon">🤖</div><h3>AI Ürün Önerileri</h3><p>Scikit-learn tabanlı algoritmalar ile geçmiş davranışlarınızı analiz eder, size en uygun ürünleri önerir.</p></div>
+            <div class="feature-card glass-card"><div class="feature-icon">📊</div><h3>Davranış Analizi</h3><p>Pandas ile işlenen veriler sayesinde alışveriş alışkanlıklarınız detaylı grafiklerle görselleştirilir.</p></div>
+            <div class="feature-card glass-card"><div class="feature-icon">⚡</div><h3>REST API Entegrasyonu</h3><p>Flask/FastAPI ile geliştirilen güçlü API altyapısı, gerçek zamanlı öneri akışı sağlar.</p></div>
+        </div>
+    </section>
+    <footer class="welcome-footer"><p>&copy; 2026 ShopAI — Akıllı E-Ticaret Öneri Sistemi. Tüm hakları saklıdır.</p></footer>
 </div>
 
-<div class="user-bar">
-  <label>Kullanıcı ID:</label>
-  <select id="userSelect" onchange="loadRecommendations()">
-    <option value="1">Kullanıcı #1</option>
-    <option value="2">Kullanıcı #2</option>
-    <option value="3">Kullanıcı #3</option>
-    <option value="4">Kullanıcı #4</option>
-  </select>
-  <button class="btn-refresh" onclick="loadRecommendations()">↻ Yenile</button>
-  <div class="api-status">
-    <div class="status-dot" id="statusDot"></div>
-    <span id="apiStatusText">Bağlanıyor...</span>
-  </div>
-</div>
+<!-- ═══════════════════════════════════════════════
+     2. AUTH MODAL (Login + Register)
+     ═══════════════════════════════════════════════ -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+        <button class="login-close" id="loginCloseBtn" aria-label="Kapat">✕</button>
 
-<div class="api-info">
-  <div class="api-box">
-    🔗 <strong>Flask API Endpoint:</strong>
-    <code>GET /api/v1/recommendations/{user_id}</code> —
-    Benzerlik skoru <code>≥ 0.70</code> olan ürünler listelenir.
-    API çalışmıyorsa sistem otomatik olarak örnek veriye geçer.
-  </div>
-</div>
+        <!-- Auth Tabs -->
+        <div class="auth-tabs" style="display: none;">
+            <button class="auth-tab active" data-auth="login">Giriş Yap</button>
+            <button class="auth-tab" data-auth="register">Kayıt Ol</button>
+        </div>
 
-<div class="section">
-  <div class="section-header">
-    <div class="section-title">Önerilen Ürünler</div>
-    <div class="section-count" id="productCount">Yükleniyor...</div>
-  </div>
-  <div class="product-grid" id="productGrid">
-    <div class="loading"><div class="spinner"></div><span>Flask API'ye bağlanılıyor...</span></div>
-  </div>
-</div>
+        <div class="auth-form-container">
+            <!-- LOGIN FORM -->
+            <form class="auth-form active" id="loginForm">
+                <div class="login-header">
+                    <div class="login-icon">🔐</div>
+                    <h2>Hoş Geldiniz</h2>
+                    <p>Hesabınıza giriş yaparak devam edin</p>
+                </div>
+                <div class="input-group">
+                    <label for="loginEmail">E-posta Adresi</label>
+                    <input type="email" id="loginEmail" placeholder="ornek@shopai.com" autocomplete="email" required>
+                </div>
+                <div class="input-group">
+                    <label for="loginPassword">Şifre</label>
+                    <input type="password" id="loginPassword" placeholder="••••••" autocomplete="current-password" required>
+                </div>
+                <div class="login-error" id="loginError">E-posta veya şifre hatalı. Lütfen tekrar deneyin.</div>
+                <button type="submit" class="login-btn">Giriş Yap</button>
+                <p class="auth-switch">Henüz üye değil misiniz? <a id="switchToRegister">Kayıt Ol</a></p>
+            </form>
 
-<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-category" id="modalCategory"></div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+            <!-- REGISTER FORM -->
+            <form class="auth-form" id="registerForm" style="margin-top: 2rem; max-height: 532px; overflow-y: auto; overflow-x: hidden; padding-right: 10px;">
+                <div class="login-header">
+                    <div class="login-icon">✨</div>
+                    <h2>Hesap Oluşturun</h2>
+                    <p>Bilgilerinizi girerek hemen başlayın</p>
+                </div>
+                <div class="input-group">
+                    <label for="regName">Ad Soyad</label>
+                    <input type="text" id="regName" placeholder="Adınız Soyadınız" required>
+                </div>
+                <div class="input-group">
+                    <label for="regEmail">E-posta Adresi</label>
+                    <input type="email" id="regEmail" placeholder="ornek@shopai.com" required>
+                </div>
+                <div class="input-group">
+                    <label for="regPassword">Şifre</label>
+                    <input type="password" id="regPassword" placeholder="En az 6 karakter" required>
+                </div>
+                <div class="input-group">
+                    <label for="regPasswordConfirm">Şifre Tekrar</label>
+                    <input type="password" id="regPasswordConfirm" placeholder="Şifrenizi tekrar girin" required>
+                </div>
+                <!-- Role section removed, defaults to user in JS -->
+                <div class="login-error" id="registerError">Hata mesajı</div>
+                <div class="login-success" id="registerSuccess">Kayıt başarılı! Giriş yapabilirsiniz.</div>
+                <button type="submit" class="login-btn">Kayıt Ol</button>
+                <p class="auth-switch">Zaten üye misiniz? <a id="switchToLogin">Giriş Yap</a></p>
+            </form>
+        </div>
     </div>
-    <div class="modal-emoji" id="modalEmoji"></div>
-    <div class="modal-title" id="modalTitle"></div>
-    <div class="modal-meta" id="modalMeta"></div>
-    <div class="modal-desc" id="modalDesc"></div>
-    <div class="modal-actions">
-      <button class="btn-primary">🛒 Sepete Ekle</button>
-      <button class="btn-secondary" onclick="closeModal()">Kapat</button>
-    </div>
-  </div>
 </div>
 
-<footer>Akıllı E-Ticaret Öneri Sistemi &mdash; Grup Projesi &mdash; 2026</footer>
-
-<script>
-  // ── Kategori → emoji + CSS sınıfı eşleşmesi ──
-  const catMap = {
-    "Elektronik": { emoji: "⚡", cls: "elektronik" },
-    "Hobi":       { emoji: "🎯", cls: "hobi" },
-  };
-  function getCat(c) { return catMap[c] || { emoji: "📦", cls: "default" }; }
-
-  // ── app.py'daki all_products ile aynı yapı (yedek veri) ──
-  const MOCK = {
-    recommendations: [
-      { id: 1, name: "Kablosuz Kulaklık",  similarity_score: 0.95, category: "Elektronik" },
-      { id: 2, name: "Bluetooth Hoparlör", similarity_score: 0.82, category: "Elektronik" },
-      { id: 4, name: "Laptop Standı",      similarity_score: 0.88, category: "Elektronik" },
-    ]
-  };
-
-  // ── Ana yükleme fonksiyonu ──
-  async function loadRecommendations() {
-    const userId = document.getElementById('userSelect').value;
-    const grid   = document.getElementById('productGrid');
-    const dot    = document.getElementById('statusDot');
-    const status = document.getElementById('apiStatusText');
-
-    grid.innerHTML = `<div class="loading"><div class="spinner"></div><span>Flask API'ye bağlanılıyor...</span></div>`;
-    dot.className  = 'status-dot';
-    status.textContent = 'Bağlanıyor...';
-
-    let data;
-    try {
-      // Gerçek API çağrısı (Relative path kullanıldığı için hem lokalde hem Render'da çalışır)
-      const res = await fetch(`/api/v1/recommendations/${userId}`);
-      if (!res.ok) throw new Error('API yanıt vermedi');
-      data = await res.json();
-      dot.className = 'status-dot';
-      status.textContent = `API Bağlantısı Başarılı ✓`;
-    } catch (e) {
-      // API kapalıysa mock veriye geç
-      data = MOCK;
-      dot.className = 'status-dot error';
-      status.textContent = 'API Hatası — Örnek Veri';
-    }
-
-    renderProducts(data.recommendations || []);
-  }
-
-  // ── Kartları çiz ──
-  function renderProducts(list) {
-    const grid = document.getElementById('productGrid');
-    document.getElementById('productCount').textContent = `${list.length} ürün`;
-
-    if (!list.length) {
-      grid.innerHTML = `<div class="error-state">⚠️ Bu kullanıcı için öneri bulunamadı.</div>`;
-      return;
-    }
-
-    grid.innerHTML = list.map((p, i) => {
-      const cat   = getCat(p.category);
-      const score = `%${Math.round(p.similarity_score * 100)} Eşleşme`;
-      return `
-        <a class="product-card" href="#"
-           onclick="openModal(event,'${encodeURIComponent(JSON.stringify(p))}')"
-           style="animation-delay:${i*0.08}s">
-          <div class="card-img ${cat.cls}">${cat.emoji}</div>
-          <div class="card-body">
-            <div class="card-top">
-              <div class="card-category">${p.category || 'Ürün'}</div>
-              <div class="score-badge">${score}</div>
+<!-- ═══════════════════════════════════════════════
+     3. DASHBOARD VIEW
+     ═══════════════════════════════════════════════ -->
+<div id="dashboard-view" class="view">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="#" class="logo"><div class="logo-icon">⚡</div>Shop<span>AI</span></a>
+        </div>
+        <nav class="sidebar-nav" id="sidebarNav">
+            <!-- Dynamically populated by JS based on role -->
+        </nav>
+        <div class="sidebar-user" id="sidebarUser">
+            <div class="user-avatar" id="userAvatar">İÖ</div>
+            <div class="user-info">
+                <div class="user-name" id="userName">İsmail Özdemir</div>
+                <div class="user-email" id="userEmail">admin@shopai.com</div>
+                <span class="user-role-badge admin" id="userRoleBadge">Admin</span>
             </div>
-            <div class="card-title">${p.name}</div>
-            <div class="card-id">Ürün ID: #${p.id}</div>
-            <button class="card-btn">Detayları Gör →</button>
-          </div>
-        </a>`;
-    }).join('');
-  }
+            <button class="logout-btn" id="logoutBtn" title="Çıkış Yap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
+        </div>
+    </aside>
 
-  // ── Modal aç ──
-  function openModal(e, encoded) {
-    e.preventDefault();
-    const p   = JSON.parse(decodeURIComponent(encoded));
-    const cat = getCat(p.category);
+    <div class="mobile-overlay" id="mobileOverlay"></div>
 
-    document.getElementById('modalCategory').textContent = p.category || 'Ürün';
-    document.getElementById('modalEmoji').textContent    = cat.emoji;
-    document.getElementById('modalTitle').textContent    = p.name;
-    document.getElementById('modalMeta').innerHTML = `
-      <span class="modal-tag">ID: #${p.id}</span>
-      <span class="modal-tag">Benzerlik: ${p.similarity_score}</span>
-      <span class="modal-tag">${p.category || 'Genel'}</span>`;
-    document.getElementById('modalDesc').textContent =
-      `Bu ürün, benzerlik skoru ${p.similarity_score} ile size önerilmektedir. ` +
-      `Algoritma, bu ürünün ilgi alanlarınızla yüksek uyum gösterdiğini tespit etmiştir. ` +
-      `Sepete ekleyerek hemen satın alabilirsiniz.`;
+    <main class="main-content">
+        <div class="mobile-header">
+            <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+            <a href="#" class="logo"><div class="logo-icon">⚡</div>Shop<span>AI</span></a>
+        </div>
+        <div class="dash-header">
+            <div>
+                <h1 id="dashTitle">Genel Bakış</h1>
+                <p class="greeting-sub" id="dashGreeting">Hoş geldiniz!</p>
+            </div>
+        </div>
 
-    document.getElementById('modalOverlay').classList.add('active');
-  }
+        <!-- ═══════ ADMIN PANELS ═══════ -->
 
-  function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
-  function handleOverlayClick(e) { if (e.target.id === 'modalOverlay') closeModal(); }
+        <!-- Admin: Overview -->
+        <div class="dash-panel" id="panel-admin-overview">
+            <div class="welcome-banner"><h2 id="bannerGreeting">👋 Hoş Geldiniz!</h2><p>Sistem yönetim paneline hoş geldiniz. Tüm kontroller burada.</p></div>
+            <div class="stats-grid">
+                <div class="stat-card glass-card"><div class="stat-icon">📦</div><div class="stat-info"><div class="stat-value">1,248</div><div class="stat-label">Toplam Ürün</div><span class="stat-change positive">↑ %12</span></div></div>
+                <div class="stat-card glass-card"><div class="stat-icon">👥</div><div class="stat-info"><div class="stat-value" id="adminUserCount">3</div><div class="stat-label">Kayıtlı Kullanıcı</div><span class="stat-change positive">↑ yeni</span></div></div>
+                <div class="stat-card glass-card"><div class="stat-icon">🎯</div><div class="stat-info"><div class="stat-value">24.5K</div><div class="stat-label">API İstekleri</div><span class="stat-change positive">↑ %23</span></div></div>
+                <div class="stat-card glass-card"><div class="stat-icon">✅</div><div class="stat-info"><div class="stat-value">%97.8</div><div class="stat-label">Başarı Oranı</div><span class="stat-change positive">↑ %2</span></div></div>
+            </div>
+            <div class="activity-section">
+                <h3>Son Etkinlikler</h3>
+                <div class="activity-list glass-card" style="padding: 0.5rem;">
+                    <div class="activity-item"><div class="activity-dot lavender"></div><span class="activity-text">Kullanıcı #142 için yeni öneri listesi oluşturuldu</span><span class="activity-time">2 dk önce</span></div>
+                    <div class="activity-item"><div class="activity-dot mint"></div><span class="activity-text">Ürün kataloğuna 15 yeni ürün eklendi</span><span class="activity-time">15 dk önce</span></div>
+                    <div class="activity-item"><div class="activity-dot pink"></div><span class="activity-text">Davranış analizi raporu güncellendi</span><span class="activity-time">1 saat önce</span></div>
+                    <div class="activity-item"><div class="activity-dot peach"></div><span class="activity-text">Model eğitimi tamamlandı (Accuracy: %90)</span><span class="activity-time">3 saat önce</span></div>
+                </div>
+            </div>
+        </div>
 
-  loadRecommendations();
-</script>
+        <!-- Admin: Users -->
+        <div class="dash-panel" id="panel-admin-users">
+            <div class="users-table-wrapper glass-card" style="padding: 0;">
+                <table class="users-table" id="usersTable">
+                    <thead><tr><th>Ad Soyad</th><th>E-posta</th><th>Rol</th><th>Kayıt Tarihi</th><th>Durum</th></tr></thead>
+                    <tbody id="usersTableBody"><!-- Rendered by JS --></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Admin: System Status -->
+        <div class="dash-panel" id="panel-admin-system">
+            <div class="api-overview">
+                <div class="api-stat glass-card"><div class="api-stat-value">%99.9</div><div class="api-stat-label">Uptime</div></div>
+                <div class="api-stat glass-card"><div class="api-stat-value">42ms</div><div class="api-stat-label">Ort. Gecikme</div></div>
+                <div class="api-stat glass-card"><div class="api-stat-value">24.5K</div><div class="api-stat-label">Toplam İstek</div></div>
+                <div class="api-stat glass-card"><div class="api-stat-value">12</div><div class="api-stat-label">Hata Sayısı</div></div>
+            </div>
+            <div class="endpoints-section">
+                <h3>API Endpoint'leri</h3>
+                <div class="endpoint-list glass-card" style="padding: 0.5rem;" id="endpointList"></div>
+            </div>
+        </div>
+
+        <!-- Admin: Recommendations -->
+        <div class="dash-panel" id="panel-admin-recommendations">
+            <div class="reco-controls">
+                <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+                    <select id="userSelect" class="user-select" aria-label="Kullanıcı Seçimi">
+                        <option value="1">Kullanıcı #1 (Teknoloji Tutkunu)</option>
+                        <option value="2">Kullanıcı #2 (Spor & Yaşam)</option>
+                        <option value="3">Kullanıcı #3 (Ev & Hobi)</option>
+                        <option value="4">Kullanıcı #4 (Karma Profil)</option>
+                    </select>
+                    <button class="btn btn-primary" id="refreshBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                        Önerileri Yenile
+                    </button>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <span class="results-count" id="resultsCount">Yükleniyor...</span>
+                    <div class="status-badge" title="API Durumu"><div class="status-dot" id="statusDot"></div><span id="statusText">Bağlanıyor...</span></div>
+                </div>
+            </div>
+            <div class="product-grid" id="productGrid"></div>
+        </div>
+
+        <!-- Admin: Analytics -->
+        <div class="dash-panel" id="panel-admin-analytics">
+            <div class="analytics-grid">
+                <div class="analytics-card glass-card"><h3>📈 Kategori Bazlı Etkileşim</h3><div class="bar-chart" id="barChart"></div></div>
+                <div class="analytics-card glass-card"><h3>🎯 Etkileşim Dağılımı</h3><div class="donut-container" id="donutChart"></div></div>
+                <div class="analytics-card glass-card">
+                    <h3>🧠 Model Performansı</h3>
+                    <div class="stats-grid" style="margin-bottom:0;">
+                        <div class="stat-card" style="padding:1rem;background:var(--pastel-lavender-light);border-radius:var(--border-radius-sm);"><div class="stat-info"><div class="stat-value" style="font-size:1.4rem;">%90</div><div class="stat-label">Accuracy</div></div></div>
+                        <div class="stat-card" style="padding:1rem;background:var(--pastel-mint-light);border-radius:var(--border-radius-sm);"><div class="stat-info"><div class="stat-value" style="font-size:1.4rem;">%70</div><div class="stat-label">Precision</div></div></div>
+                        <div class="stat-card" style="padding:1rem;background:var(--pastel-pink-light);border-radius:var(--border-radius-sm);"><div class="stat-info"><div class="stat-value" style="font-size:1.4rem;">%60</div><div class="stat-label">Recall</div></div></div>
+                        <div class="stat-card" style="padding:1rem;background:var(--pastel-blue-light);border-radius:var(--border-radius-sm);"><div class="stat-info"><div class="stat-value" style="font-size:1.4rem;">%64</div><div class="stat-label">F1 Score</div></div></div>
+                    </div>
+                </div>
+                <div class="analytics-card glass-card"><h3>👥 Kullanıcı Segmentleri</h3><div class="bar-chart" id="segmentChart"></div></div>
+            </div>
+        </div>
+
+        <!-- ═══════ USER PANELS ═══════ -->
+
+        <!-- User: Home -->
+        <div class="dash-panel" id="panel-user-home">
+            <div class="welcome-banner"><h2 id="userBannerGreeting">👋 Hoş Geldiniz!</h2><p>Size özel seçilmiş ürünleri keşfedin. Yapay zeka sizin için çalışıyor!</p></div>
+            <h3 style="font-family:'Outfit',sans-serif;font-weight:600;margin-bottom:1rem;">🤖 Size Özel Öneriler</h3>
+            <div class="catalog-grid" id="userRecoGrid"></div>
+        </div>
+
+        <!-- User: Catalog -->
+        <div class="dash-panel" id="panel-user-catalog">
+            <div class="catalog-filters" id="catalogFilters"></div>
+            <div class="catalog-grid" id="catalogGrid"></div>
+        </div>
+
+        <!-- User: Cart -->
+        <div class="dash-panel" id="panel-user-cart">
+            <div id="cartContent"></div>
+        </div>
+
+        <!-- User: Orders -->
+        <div class="dash-panel" id="panel-user-orders">
+            <div id="ordersContent"></div>
+        </div>
+    </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     4. PRODUCT DETAIL MODAL
+     ═══════════════════════════════════════════════ -->
+<div class="product-modal-overlay" id="productModalOverlay">
+    <div class="product-modal">
+        <div class="modal-header"><span>Ürün Detayı</span><button class="modal-close" id="productModalClose" aria-label="Kapat">✕</button></div>
+        <div class="modal-body">
+            <div class="modal-icon" id="modalIcon">📦</div>
+            <h3 class="modal-title" id="modalTitle">Ürün Adı</h3>
+            <p class="modal-desc" id="modalDesc">Ürün açıklaması burada yer alacak.</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="modalCancelBtn">Vazgeç</button>
+                <button class="btn btn-primary" id="modalAddCartBtn">🛒 Sepete Ekle</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
 </body>
 </html>
