@@ -16,9 +16,10 @@ app.add_middleware(
 
 # Sahte veri seti (İleride veritabanından gelecek)
 urunler = [
-    {"id": 1, "ad": "Kablosuz Kulaklık", "kategori": "Elektronik", "fiyat": 1500},
-    {"id": 2, "ad": "Akıllı Saat", "kategori": "Elektronik", "fiyat": 3000},
-    {"id": 3, "ad": "Sırt Çantası", "kategori": "Moda", "fiyat": 750}
+    {"id": 1, "name": "Kablosuz Kulaklık", "category": "Elektronik", "similarity_score": 0.95},
+    {"id": 2, "name": "Akıllı Saat", "category": "Elektronik", "similarity_score": 0.85},
+    {"id": 3, "name": "Sırt Çantası", "category": "Moda", "similarity_score": 0.72},
+    {"id": 4, "name": "Bluetooth Hoparlör", "category": "Elektronik", "similarity_score": 0.82}
 ]
 
 @app.get("/")
@@ -33,8 +34,10 @@ def ana_sayfa():
 def get_recommendations(user_id: int):
     # Şimdilik herkese tüm ürünleri öneren basit bir mantık
     return {
-        "kullanici_id": user_id,
-        "onerilen_urunler": urunler
+        "user_id": user_id,
+        "optimization_status": "High Accuracy Mode",
+        "results_count": len(urunler),
+        "recommendations": urunler
     }
 
 @app.get("/api/v1/products/{product_id}")
