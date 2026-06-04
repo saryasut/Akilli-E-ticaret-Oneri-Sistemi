@@ -1036,3 +1036,34 @@ document.addEventListener('keydown', (e) => {
 window.updateCartQty = updateCartQty;
 window.removeFromCart = removeFromCart;
 window.checkout = checkout;
+
+// ═══════════════════════════════════════════════
+// THEME MANAGER (Dark/Light Mode)
+// ═══════════════════════════════════════════════
+function initTheme() {
+  const savedTheme = localStorage.getItem('shopai_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeIcons(savedTheme);
+
+  // Bind all toggle buttons
+  document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', toggleTheme);
+  });
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const newTheme = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('shopai_theme', newTheme);
+  updateThemeIcons(newTheme);
+}
+
+function updateThemeIcons(theme) {
+  document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
+    btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  });
+}
+
+// Initialize theme on load
+initTheme();
