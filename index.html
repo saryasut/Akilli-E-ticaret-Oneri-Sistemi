@@ -53,8 +53,9 @@
         }
         .btn-cart:hover { background: #5a6fd6; color: white; }
         .btn-cart:disabled { background: #a0aec0; cursor: not-allowed; }
+        .btn-cart.added { background: #22c55e !important; }
 
-        /* Mobil yatay kaydırma - Bootstrap row ile çakışmayı önlemek için ayrı wrapper */
+        /* Mobil yatay kaydırma */
         @media (max-width: 768px) {
             .mobile-scroll-wrapper {
                 display: flex;
@@ -64,29 +65,129 @@
                 gap: 15px;
                 -webkit-overflow-scrolling: touch;
             }
-            .mobile-scroll-wrapper .scroll-item {
-                flex: 0 0 78%;
-                scroll-snap-align: start;
-            }
-            /* Mobilde Bootstrap grid devre dışı */
             .mobile-scroll-wrapper .col-12,
             .mobile-scroll-wrapper .col-md-6,
             .mobile-scroll-wrapper .col-lg-3 {
                 flex: 0 0 78% !important;
                 max-width: 78% !important;
                 padding: 0;
+                scroll-snap-align: start;
             }
         }
-        /* Placeholder SVG resim fallback */
         .product-img[src=""] { visibility: hidden; }
+
+        /* ── SEPET NAVBAR BUTONU ── */
+        .cart-nav-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1.5px solid rgba(255,255,255,0.45);
+            color: #fff;
+            border-radius: 50px;
+            padding: 5px 16px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+        .cart-nav-btn:hover { background: rgba(255,255,255,0.35); color: #fff; }
+        .cart-badge {
+            background: #ff5e7a;
+            color: #fff;
+            border-radius: 50%;
+            width: 22px; height: 22px;
+            font-size: 0.72rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.3s cubic-bezier(.175,.885,.32,1.275);
+        }
+        .cart-badge.bump { transform: scale(1.6); }
+
+        /* ── OFFCANVAS SEPET ── */
+        .offcanvas-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .offcanvas-title { font-weight: 700; }
+        .cart-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #e9ecef;
+            animation: slideIn 0.2s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(15px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        .cart-item-img {
+            width: 60px; height: 60px;
+            object-fit: cover; border-radius: 10px;
+            border: 1px solid #e9ecef; flex-shrink: 0;
+        }
+        .cart-item-info { flex: 1; min-width: 0; }
+        .cart-item-name {
+            font-weight: 600; font-size: 0.88rem; color: #2d3748;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .cart-item-price { font-size: 0.85rem; color: #2b6cb0; font-weight: 700; margin-top: 2px; }
+        .qty-control { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+        .qty-btn {
+            width: 26px; height: 26px; border-radius: 7px;
+            border: 1.5px solid #dee2e6; background: #fff;
+            font-weight: 700; font-size: 1rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s; line-height: 1;
+        }
+        .qty-btn:hover { background: #667eea; color: #fff; border-color: #667eea; }
+        .qty-display { font-weight: 700; font-size: 0.9rem; min-width: 20px; text-align: center; }
+        .remove-btn {
+            background: none; border: none; color: #cbd5e0;
+            cursor: pointer; padding: 4px; font-size: 1rem;
+            transition: color 0.2s; flex-shrink: 0;
+        }
+        .remove-btn:hover { color: #fc8181; }
+        .cart-footer {
+            border-top: 2px solid #e9ecef;
+            padding-top: 1rem;
+            margin-top: 0.5rem;
+        }
+        .cart-total-row {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 1rem;
+        }
+        .cart-total-label { font-weight: 600; color: #718096; }
+        .cart-total-amount { font-weight: 800; font-size: 1.35rem; color: #2d3748; }
+        .btn-checkout {
+            width: 100%; background: #667eea; color: #fff; border: none;
+            border-radius: 12px; padding: 13px; font-weight: 700;
+            font-size: 0.95rem; cursor: pointer; transition: background 0.2s;
+            font-family: inherit;
+        }
+        .btn-checkout:hover { background: #5a6fd6; }
+        .empty-cart-msg {
+            text-align: center; padding: 3rem 1rem; color: #a0aec0;
+        }
+        .empty-cart-msg i { font-size: 2.8rem; margin-bottom: 1rem; display: block; opacity: 0.4; }
+        .empty-cart-msg p { font-weight: 600; font-size: 0.95rem; }
     </style>
 </head>
 <body>
 
     <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
-        <div class="container">
+        <div class="container d-flex justify-content-between align-items-center">
             <a class="navbar-brand fw-bold" href="#"><i class="fa-solid fa-brain me-2"></i> Akıllı Alışveriş</a>
-            <span class="navbar-text text-white-50">Kullanıcı ID: <strong id="current-user">42</strong></span>
+            <div class="d-flex align-items-center gap-3">
+                <span class="navbar-text text-white-50 d-none d-md-inline">Kullanıcı ID: <strong id="current-user">42</strong></span>
+                <!-- SEPETİM BUTONU -->
+                <button class="cart-nav-btn" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas" aria-label="Sepeti aç">
+                    <i class="fa-solid fa-bag-shopping"></i>
+                    Sepetim
+                    <span class="cart-badge" id="cart-count">0</span>
+                </button>
+            </div>
         </div>
     </nav>
 
@@ -99,7 +200,6 @@
         <div class="recommendation-section">
             <h3 class="section-title"><i class="fa-solid fa-wand-magic-sparkles text-warning me-2"></i> Sizin İçin Seçtiklerimiz</h3>
 
-            <!-- aria-live: ekran okuyucular için dinamik içerik değişimini bildirir -->
             <div id="recommendations-wrapper" aria-live="polite" aria-atomic="false">
                 <div id="recommendations-container" class="row g-4">
                     <div class="text-center my-5 w-100" id="loading-spinner" role="status">
@@ -111,6 +211,29 @@
         </div>
     </div>
 
+    <!-- SEPET OFFCANVAS -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas" aria-labelledby="cartOffcanvasLabel" style="width:380px;">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="cartOffcanvasLabel">
+                <i class="fa-solid fa-bag-shopping me-2"></i>Sepetim
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Kapat"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column p-3">
+            <div id="cart-items-list" class="flex-grow-1 overflow-auto"></div>
+            <div id="cart-footer" class="cart-footer" style="display:none;">
+                <div class="cart-total-row">
+                    <span class="cart-total-label">Toplam</span>
+                    <span class="cart-total-amount" id="cart-total">0,00 TL</span>
+                </div>
+                <button class="btn-checkout" id="btn-checkout">
+                    <i class="fa-solid fa-lock me-2"></i>Güvenli Ödemeye Geç
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3">
         <div id="action-toast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
@@ -125,7 +248,10 @@
         const USER_ID = 42;
         const API_BASE_URL = 'http://127.0.0.1:8000';
 
-        // Placeholder SVG oluşturucu — dış servise bağımlılığı ortadan kaldırır
+        // ── SEPET STATE ──
+        const cart = {}; // { "product_id": { product, qty } }
+
+        // ── YARDIMCI FONKSİYONLAR ──
         function placeholderSVG(text) {
             const encoded = encodeURIComponent(
                 `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200">
@@ -137,7 +263,6 @@
             return 'data:image/svg+xml,' + encoded;
         }
 
-        // XSS'e karşı güvenli metin temizleme
         function sanitize(str) {
             if (str == null) return '';
             const div = document.createElement('div');
@@ -145,7 +270,6 @@
             return div.innerHTML;
         }
 
-        // Fiyatı güvenli biçimde biçimlendirme
         function formatPrice(price) {
             const num = parseFloat(price);
             if (isNaN(num)) return '—';
@@ -154,23 +278,26 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchRecommendations(USER_ID);
+            renderCart();
+
+            document.getElementById('btn-checkout').addEventListener('click', () => {
+                const total = Object.values(cart).reduce((s, { product, qty }) => s + product.price * qty, 0);
+                showToast(`Ödeme sayfasına yönlendiriliyorsunuz — Toplam: ${formatPrice(total)} TL 💳`, 'success');
+            });
         });
 
-        // ————————————————————————————————————————
+        // ─────────────────────────────────────────────────
         // ADIM 1: API'den önerileri çek ve listele
-        // ————————————————————————————————————————
+        // ─────────────────────────────────────────────────
         function fetchRecommendations(userId) {
             const container = document.getElementById('recommendations-container');
 
             fetch(`${API_BASE_URL}/recommendations/${userId}`)
                 .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Sunucu yanıt kodu: ${response.status}`);
-                    }
+                    if (!response.ok) throw new Error(`Sunucu yanıt kodu: ${response.status}`);
                     return response.json();
                 })
                 .then(products => {
-                    // Spinner'ı temizle
                     container.innerHTML = '';
 
                     if (!Array.isArray(products) || products.length === 0) {
@@ -178,16 +305,13 @@
                         return;
                     }
 
-                    // Mobil için sarmalayıcı oluştur
                     const isMobile = window.innerWidth <= 768;
                     if (isMobile) {
                         container.classList.remove('row', 'g-4');
                         container.classList.add('mobile-scroll-wrapper');
                     }
 
-                    // Her ürün için DOM düğümü oluştur (innerHTML += yerine createElement — XSS güvenli)
                     products.forEach(product => {
-                        // API'nin döndürebileceği farklı alan adlarına karşı fallback
                         const productId   = product.product_id ?? product.id ?? '';
                         const productName = product.product_name ?? product.name ?? product.title ?? 'İsimsiz Ürün';
                         const imageUrl    = product.resim_url ?? product.image_url ?? product.image ?? '';
@@ -197,8 +321,6 @@
 
                         const col = document.createElement('div');
                         col.className = 'col-12 col-md-6 col-lg-3';
-
-                        // Kart şablonunu güvenli DOM API ile oluştur
                         col.innerHTML = `
                             <div class="product-card">
                                 <div class="image-container">
@@ -215,26 +337,29 @@
                                     </div>
                                 </div>
                                 <div class="card-body">
-                                    <a href="#" class="product-name" data-product-id="${sanitize(productId)}" data-action="click">
+                                    <a href="#" class="product-name"
+                                       data-product-id="${sanitize(productId)}"
+                                       data-action="click">
                                         ${sanitize(productName)}
                                     </a>
                                     <div class="price-tag">${formatPrice(price)} TL</div>
                                     <button
                                         class="btn-cart"
                                         data-product-id="${sanitize(productId)}"
+                                        data-product-name="${sanitize(productName)}"
+                                        data-product-price="${sanitize(price)}"
+                                        data-product-image="${sanitize(imageUrl)}"
                                         data-action="cart"
                                         aria-label="${sanitize(productName)} ürününü sepete ekle"
                                     >
-                                        <i class="fa-solid fa-cart-plus me-2" aria-hidden="true"></i> Sepete Ekle
+                                        <i class="fa-solid fa-cart-plus me-2" aria-hidden="true"></i>Sepete Ekle
                                     </button>
                                 </div>
                             </div>
                         `;
-
                         container.appendChild(col);
                     });
 
-                    // Olay dinleyicilerini event delegation ile tek noktadan yönet (inline onclick yok)
                     container.addEventListener('click', handleCardAction);
                 })
                 .catch(error => {
@@ -251,32 +376,131 @@
                 });
         }
 
-        // ————————————————————————————————————————————————————————
-        // ADIM 2: Event delegation — tüm kart tıklamaları buradan
-        // ————————————————————————————————————————————————————————
+        // ─────────────────────────────────────────────────
+        // ADIM 2: Event delegation — tüm kart tıklamaları
+        // ─────────────────────────────────────────────────
         function handleCardAction(e) {
             const target = e.target.closest('[data-action]');
             if (!target) return;
-
             e.preventDefault();
 
             const productId  = target.dataset.productId;
             const actionType = target.dataset.action;
-
             if (!productId) return;
 
-            // Sepete ekle butonunu geçici olarak devre dışı bırak (çift tıklamayı önler)
             if (actionType === 'cart') {
-                target.disabled = true;
-                setTimeout(() => { target.disabled = false; }, 2000);
+                const product = {
+                    product_id:   productId,
+                    product_name: target.dataset.productName,
+                    price:        parseFloat(target.dataset.productPrice) || 0,
+                    resim_url:    target.dataset.productImage,
+                };
+                addToCart(product, target);
             }
 
             trackUserAction(USER_ID, productId, actionType);
         }
 
-        // ———————————————————————————————————————————————
+        // ─────────────────────────────────────────────────
+        // SEPET FONKSİYONLARI
+        // ─────────────────────────────────────────────────
+        function addToCart(product, btn) {
+            const id = String(product.product_id);
+            if (cart[id]) {
+                cart[id].qty++;
+            } else {
+                cart[id] = { product, qty: 1 };
+            }
+            renderCart();
+            bumpBadge();
+
+            // Buton geri bildirimi
+            if (btn) {
+                btn.classList.add('added');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-check me-2" aria-hidden="true"></i>Eklendi!';
+                setTimeout(() => {
+                    btn.classList.remove('added');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-cart-plus me-2" aria-hidden="true"></i>Sepete Ekle';
+                }, 1800);
+            }
+
+            showToast(`${product.product_name} sepete eklendi 🛒`, 'success');
+        }
+
+        function removeFromCart(id) {
+            delete cart[id];
+            renderCart();
+        }
+
+        function changeQty(id, delta) {
+            if (!cart[id]) return;
+            cart[id].qty += delta;
+            if (cart[id].qty <= 0) delete cart[id];
+            renderCart();
+        }
+
+        function renderCart() {
+            const list   = document.getElementById('cart-items-list');
+            const footer = document.getElementById('cart-footer');
+            const badge  = document.getElementById('cart-count');
+            const items  = Object.values(cart);
+
+            // Rozeti güncelle
+            const totalQty = items.reduce((s, i) => s + i.qty, 0);
+            badge.textContent = totalQty;
+
+            if (items.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-cart-msg">
+                        <i class="fa-solid fa-bag-shopping"></i>
+                        <p>Sepetiniz boş</p>
+                        <small class="text-muted">Ürün eklemek için "Sepete Ekle" butonuna tıklayın.</small>
+                    </div>`;
+                footer.style.display = 'none';
+                return;
+            }
+
+            footer.style.display = 'block';
+
+            list.innerHTML = items.map(({ product, qty }) => {
+                const id    = String(product.product_id);
+                const img   = sanitize(product.resim_url) || placeholderSVG(product.product_name);
+                const name  = sanitize(product.product_name);
+                const price = formatPrice(product.price * qty);
+                return `
+                    <div class="cart-item">
+                        <img src="${img}" class="cart-item-img" alt="${name}"
+                             onerror="this.src='${placeholderSVG(product.product_name)}'">
+                        <div class="cart-item-info">
+                            <div class="cart-item-name">${name}</div>
+                            <div class="cart-item-price">${price} TL</div>
+                            <div class="qty-control">
+                                <button class="qty-btn" onclick="changeQty('${id}', -1)" aria-label="Azalt">−</button>
+                                <span class="qty-display">${qty}</span>
+                                <button class="qty-btn" onclick="changeQty('${id}', 1)" aria-label="Artır">+</button>
+                            </div>
+                        </div>
+                        <button class="remove-btn" onclick="removeFromCart('${id}')" aria-label="Ürünü kaldır">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>`;
+            }).join('');
+
+            const total = items.reduce((s, { product, qty }) => s + product.price * qty, 0);
+            document.getElementById('cart-total').textContent = formatPrice(total) + ' TL';
+        }
+
+        function bumpBadge() {
+            const badge = document.getElementById('cart-count');
+            badge.classList.add('bump');
+            setTimeout(() => badge.classList.remove('bump'), 400);
+        }
+
+        // ─────────────────────────────────────────────────
         // ADIM 3: Kullanıcı etkileşimini backend'e bildir
-        // ———————————————————————————————————————————————
+        // ─────────────────────────────────────────────────
         function trackUserAction(userId, productId, actionType) {
             const payload = {
                 user_id:    parseInt(userId, 10),
@@ -295,29 +519,23 @@
             })
             .then(data => {
                 console.log('Etkileşim loglandı:', data);
-                const msg = actionType === 'click'
-                    ? 'Ürün incelemesi algoritmaya iletildi 🎯'
-                    : 'Ürün sepete eklendi 🛒';
-                showToast(msg, 'success');
+                if (actionType === 'click') {
+                    showToast('Ürün incelemesi algoritmaya iletildi 🎯', 'success');
+                }
             })
             .catch(error => {
                 console.error('Tracking hatası:', error);
-                // Tracking hatası kullanıcı deneyimini bozmasın; sessizce logla
             });
         }
 
-        // ———————————————————————————————
+        // ─────────────────────────────────────────────────
         // Yardımcı: Toast bildirimi göster
-        // ———————————————————————————————
+        // ─────────────────────────────────────────────────
         function showToast(message, type = 'success') {
             const toastEl = document.getElementById('action-toast');
             document.getElementById('toast-message').innerText = message;
-
-            // Rengi tiype göre güncelle
             toastEl.className = `toast align-items-center text-white border-0 bg-${type}`;
-
-            const toast = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 3000 });
-            toast.show();
+            bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 3000 }).show();
         }
     </script>
 </body>
