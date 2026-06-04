@@ -5,7 +5,7 @@
 Aşağıda sistemde kullanılan tablolar ve aralarındaki ilişkiler gösterilmektedir.
 
 
-![Veritabanı Şeması](database_schema.png)
+![Veritabanı Şeması](../db/database_schema.png)
 
 ---
 
@@ -15,5 +15,4 @@ Aşağıda sistemde kullanılan tablolar ve aralarındaki ilişkiler gösterilme
 - products
 - orders
 - order_items
-- ratings
-- categories
+- interactions
