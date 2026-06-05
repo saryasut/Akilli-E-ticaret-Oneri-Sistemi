@@ -381,7 +381,7 @@ body {
 
 .sidebar {
   position: fixed; top: 0; left: 0; width: var(--sidebar-width); height: 100vh;
-  background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px);
+  background: var(--surface); backdrop-filter: blur(20px);
   border-right: 1px solid var(--surface-border); display: flex; flex-direction: column; z-index: 50;
   transition: var(--transition-normal);
 }
