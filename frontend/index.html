@@ -15,7 +15,8 @@
 <div id="welcome-view" class="view active">
     <nav class="welcome-nav" id="welcomeNav">
         <a href="#" class="logo"><div class="logo-icon">⚡</div>Shop<span>AI</span></a>
-        <div class="nav-right">
+        <div class="nav-right" style="display: flex; align-items: center; gap: 1rem;">
+            <button class="theme-toggle-btn" aria-label="Temayı Değiştir" title="Karanlık/Aydınlık Modu" style="background: var(--surface); border: 1px solid var(--surface-border); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; transition: all 0.2s ease;">🌙</button>
             <button class="btn btn-login" id="loginOpenBtn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                 Giriş Yap
@@ -141,11 +142,12 @@
             <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
             <a href="#" class="logo"><div class="logo-icon">⚡</div>Shop<span>AI</span></a>
         </div>
-        <div class="dash-header">
+        <div class="dash-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
                 <h1 id="dashTitle">Genel Bakış</h1>
                 <p class="greeting-sub" id="dashGreeting">Hoş geldiniz!</p>
             </div>
+            <button class="theme-toggle-btn" aria-label="Temayı Değiştir" title="Karanlık/Aydınlık Modu" style="background: var(--surface); border: 1px solid var(--surface-border); border-radius: 50%; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; transition: all 0.2s ease; box-shadow: var(--shadow-sm);">🌙</button>
         </div>
 
         <!-- ═══════ ADMIN PANELS ═══════ -->

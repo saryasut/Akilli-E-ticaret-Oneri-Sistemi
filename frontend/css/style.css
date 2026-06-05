@@ -67,6 +67,34 @@
   --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+[data-theme="dark"] {
+  --bg-primary: #1A1625;
+  --bg-secondary: #241D30;
+  --bg-gradient: linear-gradient(135deg, #1A1625 0%, #241D30 40%, #2A213D 70%, #1A1625 100%);
+  --bg-hero-gradient: linear-gradient(160deg, #1A1625 0%, #241D30 40%, #2A213D 70%, #1A1625 100%);
+
+  --surface: rgba(45, 35, 60, 0.7);
+  --surface-solid: #2A213D;
+  --surface-hover: rgba(55, 45, 75, 0.85);
+  --surface-border: rgba(195, 177, 225, 0.15);
+  --surface-border-hover: rgba(195, 177, 225, 0.3);
+
+  --text-primary: #FDF6FF;
+  --text-secondary: #C3B1E1;
+  --text-muted: #8E7A9F;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+.theme-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+  background: var(--surface-hover) !important;
+}
+
 /* ═══════════════════════════════════════════════
    RESET & BASE
    ═══════════════════════════════════════════════ */
