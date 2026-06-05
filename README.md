@@ -11,8 +11,9 @@ Müşteri davranışlarını ve ürün özelliklerini analiz ederek kişiselleş
 │   ├── api/
 │   │   ├── fastapi_app/          # FastAPI web servisi (Production)
 │   │   │   └── main.py           # API endpoint'leri
-│   │   └── flask_app/            # Flask web servisi (Alternatif)
-│   │       └── app.py            # API endpoint'leri
+│   │   ├── flask_app/            # Flask web servisi (Alternatif)
+│   │   │   └── app.py            # API endpoint'leri
+│   │   └── shared_data.py        # Ortak veri tabanı simülasyonu ve state yönetimi
 │   └── models/
 │       └── evaluation.py         # Model eğitim ve metrik hesaplama
 │
@@ -33,7 +34,7 @@ Müşteri davranışlarını ve ürün özelliklerini analiz ederek kişiselleş
 │   └── er_diagram_v1.png         # İlk versiyon ER diyagramı
 │
 ├── docs/                         # Proje dokümantasyonu
-│   ├── proje_akisi.md            # Haftalık ilerleme raporu
+│   ├── proje_sunumu.pdf          # Final Proje Sunumu
 │   ├── oneri_algoritmasi_raporu.md
 │   ├── model_performance_report.md
 │   ├── rest_api_tasarimi.pdf
@@ -44,13 +45,14 @@ Müşteri davranışlarını ve ürün özelliklerini analiz ederek kişiselleş
 │   ├── veri_seti_kesfi_ve_on_isleme.md
 │   ├── veri_on_isleme_modulu.md
 │   ├── veri_on_isleme_iyilestirme.pdf
-│   ├── akilli_e_ticaret_grafigi.pdf
-│   └── proje_sunumu.pdf
+│   └── akilli_e_ticaret_grafigi.pdf
 │
+├── proje_akisi.md                # Haftalık ilerleme raporu ve proje akış planı
+├── README.md                     # Ana dökümantasyon (şu anki dosya)
 ├── requirements.txt              # Python bağımlılıkları
-├── render.yaml                   # Render.com IaC yapılandırması
+├── render.yaml                   # Render.com dağıtım (IaC) yapılandırması
 ├── .python-version               # Python sürümü (3.14.3)
-└── .gitignore
+└── .gitignore                    # Git yoksayma kuralları
 ```
 
 ---
@@ -129,10 +131,12 @@ python -m http.server 8080
 Tarayıcıda http://localhost:8080 adresine gidin.
 
 **Varsayılan Hesaplar:**
-| Rol | E-posta | Şifre |
-|-----|---------|-------|
-| Admin | admin@shopai.com | 123456 |
-| Kullanıcı | user@shopai.com | 123456 |
+| Rol | İsim | E-posta | Şifre |
+|-----|------|---------|-------|
+| **Admin** | İsmail Özdemir | admin@shopai.com | 123456 |
+| **Kullanıcı** | Ayşe Demir | ayse@shopai.com | 123456 |
+| **Kullanıcı** | Fatma Yılmaz | fatma@shopai.com | 123456 |
+| **Kullanıcı** | Ali Yücel | ali@shopai.com | 123456 |
 
 ---
 
