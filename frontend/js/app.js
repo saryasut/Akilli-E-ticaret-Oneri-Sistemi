@@ -1,0 +1,1038 @@
+// ═══════════════════════════════════════════════
+// ShopAI — Akıllı E-Ticaret Öneri Sistemi
+// Role-Based Frontend Application Controller
+// ═══════════════════════════════════════════════
+
+// API URL — Render'da environment variable'dan, lokalde localhost:8000'den alır
+const API_BASE = window.SHOPAI_API_URL || (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+  ? 'http://localhost:8000'
+  : `https://e-commerce-recommendation-api.onrender.com`);
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+// ── API Service Layer ──
+const Api = {
+  online: false,
+
+  async _fetch(path, options = {}) {
+    try {
+      const url = `${API_BASE}${path}`;
+      const res = await fetch(url, {
+        headers: { 'Content-Type': 'application/json', ...options.headers },
+        ...options
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || err.error || `HTTP ${res.status}`);
+      }
+      this.online = true;
+      return await res.json();
+    } catch (e) {
+      this.online = false;
+      throw e;
+    }
+  },
+
+  // Health
+  async health() { return this._fetch('/api/health'); },
+
+  // Auth
+  async login(email, password) {
+    return this._fetch('/api/v1/auth/login', {
+      method: 'POST', body: JSON.stringify({ email, password })
+    });
+  },
+  async register(name, email, password, role) {
+    return this._fetch('/api/v1/auth/register', {
+      method: 'POST', body: JSON.stringify({ name, email, password, role })
+    });
+  },
+
+  // Products
+  async getProducts(category) {
+    const q = category && category !== 'Tümü' ? `?category=${encodeURIComponent(category)}` : '';
+    return this._fetch(`/api/v1/products${q}`);
+  },
+  async getProduct(id) { return this._fetch(`/api/v1/products/${id}`); },
+
+  // Recommendations
+  async getRecommendations(userId, topN = 8) {
+    return this._fetch(`/api/v1/recommendations/${userId}?top_n=${topN}`);
+  },
+
+  // Users (admin)
+  async getUsers() { return this._fetch('/api/v1/users'); },
+
+  // Cart
+  async getCart(email) { return this._fetch(`/api/v1/cart/${encodeURIComponent(email)}`); },
+  async addToCart(email, productId, qty = 1) {
+    return this._fetch(`/api/v1/cart/${encodeURIComponent(email)}`, {
+      method: 'POST', body: JSON.stringify({ product_id: productId, qty })
+    });
+  },
+  async removeFromCart(email, productId) {
+    return this._fetch(`/api/v1/cart/${encodeURIComponent(email)}/${productId}`, { method: 'DELETE' });
+  },
+
+  // Orders
+  async getOrders(email) { return this._fetch(`/api/v1/orders/${encodeURIComponent(email)}`); },
+  async createOrder(email) {
+    return this._fetch(`/api/v1/orders/${encodeURIComponent(email)}`, { method: 'POST' });
+  },
+
+  // Interactions
+  async logInteraction(userId, productId, type) {
+    return this._fetch('/api/v1/interactions', {
+      method: 'POST', body: JSON.stringify({ user_id: userId, product_id: productId, type })
+    }).catch(() => {}); // Etkileşim kaydı sessizce başarısız olabilir
+  }
+};
+
+// ── Default Users ──
+const DEFAULT_USERS = [
+  { name: 'İsmail Özdemir', email: 'admin@shopai.com',  password: '123456', role: 'admin', date: '2026-01-15' },
+  { name: 'Ayşe Demir',     email: 'ayse@shopai.com',   password: '123456', role: 'user',  date: '2026-06-01' },
+  { name: 'Fatma Yılmaz',   email: 'fatma@shopai.com',  password: '123456', role: 'user',  date: '2026-06-02' },
+  { name: 'Ali Yücel',      email: 'ali@shopai.com',    password: '123456', role: 'user',  date: '2026-06-03' },
+];
+
+// Mevcut önbellekteki eski kullanıcıları temizle ki yeni liste devreye girsin
+localStorage.removeItem('shopai_users');
+
+// ── Product Catalog ──
+const CATALOG = [
+  { id: 101, name: "Premium Kablosuz Kulaklık",  category: "Elektronik", price: 1499, stock: 45, icon: "🎧", desc: "Aktif gürültü engelleme özellikli, 30 saat pil ömrü." },
+  { id: 102, name: "Mekanik Klavye Pro",          category: "Elektronik", price: 2199, stock: 22, icon: "⌨️", desc: "Cherry MX Blue switch, RGB aydınlatma, alüminyum gövde." },
+  { id: 103, name: "Ergonomik Mouse",             category: "Elektronik", price: 899,  stock: 38, icon: "🖱️", desc: "Dikey tasarım, bilek desteği, kablosuz bağlantı." },
+  { id: 104, name: "4K Monitör 27\"",             category: "Elektronik", price: 8499, stock: 12, icon: "🖥️", desc: "IPS panel, HDR10, %99 sRGB renk doğruluğu." },
+  { id: 105, name: "Taşınabilir SSD 1TB",         category: "Elektronik", price: 1899, stock: 55, icon: "💾", desc: "USB-C, 1050MB/s okuma hızı, şok dayanıklı." },
+  { id: 201, name: "Yoga Matı ve Seti",           category: "Spor",       price: 349,  stock: 80, icon: "🧘", desc: "6mm kalınlık, kaymaz yüzey, taşıma çantası dahil." },
+  { id: 202, name: "Akıllı Fitness Bilekliği",    category: "Spor",       price: 1299, stock: 33, icon: "⌚", desc: "Nabız ölçer, uyku takibi, 7 gün pil ömrü." },
+  { id: 203, name: "Dambıl Seti 20kg",            category: "Spor",       price: 699,  stock: 28, icon: "🏋️", desc: "Ayarlanabilir ağırlık, neopren kaplama." },
+  { id: 204, name: "Koşu Bandı",                  category: "Spor",       price: 4999, stock: 8,  icon: "🏃", desc: "Katlanabilir, 12 program, eğim ayarı." },
+  { id: 301, name: "Bestseller Kitap Seti",        category: "Hobi",       price: 249,  stock: 95, icon: "📚", desc: "2026 çok satanlar, 5 kitaplık özel set." },
+  { id: 302, name: "Puzzle 1000 Parça",            category: "Hobi",       price: 179,  stock: 60, icon: "🧩", desc: "Doğa manzarası, parlak baskı kalitesi." },
+  { id: 303, name: "Suluboya Seti Premium",        category: "Hobi",       price: 449,  stock: 42, icon: "🎨", desc: "48 renk, profesyonel fırçalar, ahşap kutu." },
+  { id: 401, name: "Akıllı Ev Aydınlatma Seti",   category: "Ev",         price: 599,  stock: 35, icon: "💡", desc: "Wi-Fi kontrol, 16M renk, ses asistanı uyumlu." },
+  { id: 402, name: "Robot Süpürge",                category: "Ev",         price: 3499, stock: 15, icon: "🤖", desc: "Lazer navigasyon, otomatik boşaltma, uygulama kontrolü." },
+  { id: 403, name: "Kahve Makinesi",               category: "Ev",         price: 2799, stock: 20, icon: "☕", desc: "Espresso ve filtre kahve, dahili öğütücü." },
+  { id: 501, name: "Pamuklu T-Shirt",              category: "Giyim",      price: 199,  stock: 120,icon: "👕", desc: "Organik pamuk, rahat kesim, 5 renk seçeneği." },
+  { id: 502, name: "Deri Cüzdan",                  category: "Giyim",      price: 449,  stock: 50, icon: "👛", desc: "El yapımı, RFID koruma, hediye kutusunda." },
+  { id: 503, name: "Spor Ayakkabı",                category: "Giyim",      price: 1599, stock: 40, icon: "👟", desc: "Hafif taban, nefes alan kumaş, yürüyüş ve koşu." },
+];
+
+const CATEGORY_ICONS = { "Elektronik": "🎧", "Spor": "🏃", "Hobi": "📚", "Ev": "🏠", "Giyim": "👗", "default": "📦" };
+const CATEGORIES = [...new Set(CATALOG.map(p => p.category))];
+
+const ENDPOINTS = [
+  { method: 'GET',  path: '/api/v1/recommendations/{user_id}', desc: 'Kullanıcıya özel ürün önerileri' },
+  { method: 'GET',  path: '/api/v1/products',                   desc: 'Tüm ürün listesi' },
+  { method: 'GET',  path: '/api/v1/products/{product_id}',      desc: 'Ürün detay bilgisi' },
+  { method: 'POST', path: '/api/v1/interactions',               desc: 'Kullanıcı etkileşimi kaydet' },
+  { method: 'GET',  path: '/api/v1/users/{user_id}/history',    desc: 'Kullanıcı geçmişi' },
+  { method: 'GET',  path: '/api/health',                         desc: 'Sistem sağlık kontrolü' },
+];
+
+const CHART_DATA = {
+  category:    [{ label:'Elektronik',value:42,color:'var(--pastel-lavender)' },{ label:'Spor',value:28,color:'var(--pastel-mint)' },{ label:'Hobi',value:18,color:'var(--pastel-pink)' },{ label:'Ev',value:12,color:'var(--pastel-peach)' }],
+  interaction: [{ label:'Görüntüleme',value:45,color:'var(--pastel-lavender)' },{ label:'Sepete Ekleme',value:25,color:'var(--pastel-mint)' },{ label:'Satın Alma',value:18,color:'var(--pastel-pink)' },{ label:'Favorilere',value:12,color:'var(--pastel-peach)' }],
+  segment:     [{ label:'Teknoloji',value:35,color:'var(--pastel-lavender)' },{ label:'Spor',value:25,color:'var(--pastel-mint)' },{ label:'Ev & Yaşam',value:22,color:'var(--pastel-pink)' },{ label:'Hobi',value:18,color:'var(--pastel-peach)' }],
+};
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let currentUser = null;
+let cart = [];
+let currentCatalogFilter = 'Tümü';
+let currentModalProduct = null;
+
+// ═══════════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initStorage();
+  initAuth();
+  initNavbar();
+  initAuthModal();
+  initMobile();
+  initProductModal();
+});
+
+// ═══════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════
+function initStorage() {
+  if (!localStorage.getItem('shopai_users')) {
+    localStorage.setItem('shopai_users', JSON.stringify(DEFAULT_USERS));
+  }
+  if (!localStorage.getItem('shopai_orders')) {
+    localStorage.setItem('shopai_orders', JSON.stringify([]));
+  }
+}
+
+function getUsers() { return JSON.parse(localStorage.getItem('shopai_users') || '[]'); }
+function saveUsers(users) { localStorage.setItem('shopai_users', JSON.stringify(users)); }
+function getOrders() { return JSON.parse(localStorage.getItem('shopai_orders') || '[]'); }
+function saveOrders(orders) { localStorage.setItem('shopai_orders', JSON.stringify(orders)); }
+
+function loadCart() {
+  cart = JSON.parse(sessionStorage.getItem('shopai_cart') || '[]');
+}
+function saveCart() {
+  sessionStorage.setItem('shopai_cart', JSON.stringify(cart));
+}
+
+// ═══════════════════════════════════════════════
+// AUTH MODULE
+// ═══════════════════════════════════════════════
+function initAuth() {
+  const session = sessionStorage.getItem('shopai_user');
+  if (session) {
+    currentUser = JSON.parse(session);
+    loadCart();
+    enterDashboard(currentUser);
+  }
+}
+
+async function login(email, password) {
+  // API'den dene
+  try {
+    const data = await Api.login(email, password);
+    if (data && data.user) {
+      currentUser = data.user;
+      currentUser.password = password; // fallback için sakla
+      sessionStorage.setItem('shopai_user', JSON.stringify(currentUser));
+      // API'deki kullanıcıyı local'e de kaydet
+      const users = getUsers();
+      if (!users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+        users.push(currentUser);
+        saveUsers(users);
+      }
+      loadCart();
+      return currentUser;
+    }
+  } catch {
+    // API kapalı — localStorage'dan dene
+    const users = getUsers();
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+    if (user) {
+      currentUser = user;
+      sessionStorage.setItem('shopai_user', JSON.stringify(user));
+      loadCart();
+      return user;
+    }
+  }
+  return null;
+}
+
+async function register(name, email, password, role) {
+  // API'den dene
+  try {
+    const result = await Api.register(name, email, password, role);
+    // API başarılı — local'e de kaydet
+    const users = getUsers();
+    if (!users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+      users.push({ name, email, password, role, date: new Date().toISOString().split('T')[0] });
+      saveUsers(users);
+    }
+    return result;
+  } catch (e) {
+    // API kapalı veya hata
+    if (e.message.includes('kayıtlı') || e.message.includes('409')) {
+      return { error: 'Bu e-posta adresi zaten kayıtlı.' };
+    }
+    // Fallback: localStorage
+    const users = getUsers();
+    if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+      return { error: 'Bu e-posta adresi zaten kayıtlı.' };
+    }
+    users.push({ name, email, password, role, date: new Date().toISOString().split('T')[0] });
+    saveUsers(users);
+    return { success: true };
+  }
+}
+
+function logout() {
+  currentUser = null;
+  cart = [];
+  sessionStorage.removeItem('shopai_user');
+  sessionStorage.removeItem('shopai_cart');
+  showView('welcome');
+  closeAuthModal();
+}
+
+// ═══════════════════════════════════════════════
+// VIEW ROUTER
+// ═══════════════════════════════════════════════
+function showView(viewName) {
+  $('#welcome-view').classList.remove('active');
+  $('#dashboard-view').classList.remove('active');
+  if (viewName === 'welcome') $('#welcome-view').classList.add('active');
+  else if (viewName === 'dashboard') $('#dashboard-view').classList.add('active');
+}
+
+function enterDashboard(user) {
+  currentUser = user;
+
+  // Update sidebar user info
+  $('#userName').textContent = user.name;
+  $('#userEmail').textContent = user.email;
+  $('#userAvatar').textContent = getInitials(user.name);
+  const badge = $('#userRoleBadge');
+  badge.textContent = user.role === 'admin' ? 'Admin' : 'Kullanıcı';
+  badge.className = `user-role-badge ${user.role}`;
+
+  // Greeting
+  const hour = new Date().getHours();
+  let greeting = hour < 12 ? 'Günaydın' : hour >= 18 ? 'İyi akşamlar' : 'İyi günler';
+  $('#dashGreeting').textContent = `${greeting}, ${user.name.split(' ')[0]}!`;
+
+  // Build sidebar based on role
+  buildSidebar(user.role);
+
+  showView('dashboard');
+
+  // Activate first panel
+  const firstItem = $('.sidebar-item');
+  if (firstItem) firstItem.click();
+}
+
+function getInitials(name) {
+  return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+}
+
+// ═══════════════════════════════════════════════
+// SIDEBAR BUILDER
+// ═══════════════════════════════════════════════
+function buildSidebar(role) {
+  const nav = $('#sidebarNav');
+
+  const adminItems = [
+    { panel: 'admin-overview',        icon: '🏠', label: 'Genel Bakış' },
+    { panel: 'admin-users',           icon: '👥', label: 'Kayıtlı Kullanıcılar' },
+    { panel: 'admin-system',          icon: '🔌', label: 'Sistem Durumu' },
+    { divider: true },
+    { label: 'ANALİTİK', section: true },
+    { panel: 'admin-recommendations', icon: '🤖', label: 'Ürün Önerileri' },
+    { panel: 'admin-analytics',       icon: '📊', label: 'Davranış Analizi' },
+  ];
+
+  const userItems = [
+    { panel: 'user-home',    icon: '🏠', label: 'Ana Sayfa' },
+    { panel: 'user-catalog', icon: '🛍️', label: 'Kategoriler' },
+    { divider: true },
+    { label: 'ALIŞVERİŞ', section: true },
+    { panel: 'user-cart',    icon: '🛒', label: 'Sepetim' },
+    { panel: 'user-orders',  icon: '📦', label: 'Siparişlerim' },
+  ];
+
+  const items = role === 'admin' ? adminItems : userItems;
+
+  nav.innerHTML = items.map(item => {
+    if (item.divider) return '<div class="sidebar-divider"></div>';
+    if (item.section) return `<div class="sidebar-label">${item.label}</div>`;
+    return `<button class="sidebar-item" data-panel="${item.panel}"><span class="item-icon">${item.icon}</span>${item.label}</button>`;
+  }).join('');
+
+  // Bind sidebar clicks
+  nav.querySelectorAll('.sidebar-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      nav.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activatePanel(btn.dataset.panel);
+      closeMobileSidebar();
+    });
+  });
+
+  // Logout
+  $('#logoutBtn').addEventListener('click', logout);
+}
+
+function activatePanel(panelName) {
+  $$('.dash-panel').forEach(p => p.classList.remove('active'));
+  const panel = $(`#panel-${panelName}`);
+  if (panel) {
+    panel.classList.add('active');
+    panel.style.animation = 'none';
+    panel.offsetHeight;
+    panel.style.animation = 'fadeInUp 0.4s ease';
+  }
+
+  // Title mapping
+  const titles = {
+    'admin-overview': 'Genel Bakış', 'admin-users': 'Kayıtlı Kullanıcılar',
+    'admin-system': 'Sistem Durumu', 'admin-recommendations': 'Ürün Önerileri',
+    'admin-analytics': 'Davranış Analizi',
+    'user-home': 'Ana Sayfa', 'user-catalog': 'Kategoriler',
+    'user-cart': 'Sepetim', 'user-orders': 'Siparişlerim',
+  };
+  $('#dashTitle').textContent = titles[panelName] || '';
+
+  // Initialize panel content
+  if (panelName === 'admin-overview') initAdminOverview();
+  if (panelName === 'admin-users') renderUsersTable();
+  if (panelName === 'admin-system') renderEndpoints();
+  if (panelName === 'admin-recommendations') initRecommendations();
+  if (panelName === 'admin-analytics') renderCharts();
+  if (panelName === 'user-home') renderUserHome();
+  if (panelName === 'user-catalog') renderCatalog();
+  if (panelName === 'user-cart') renderCart();
+  if (panelName === 'user-orders') renderOrders();
+}
+
+// ═══════════════════════════════════════════════
+// NAVBAR
+// ═══════════════════════════════════════════════
+function initNavbar() {
+  const nav = $('#welcomeNav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 20);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// AUTH MODAL
+// ═══════════════════════════════════════════════
+function initAuthModal() {
+  const loginOverlay = $('#loginOverlay');
+  const loginForm = $('#loginForm');
+  const registerForm = $('#registerForm');
+  const tabs = $$('.auth-tab');
+
+  // Open
+  $('#loginOpenBtn').addEventListener('click', openAuthModal);
+  $('#heroLoginBtn').addEventListener('click', openAuthModal);
+  $('#loginCloseBtn').addEventListener('click', closeAuthModal);
+  loginOverlay.addEventListener('click', (e) => { if (e.target === loginOverlay) closeAuthModal(); });
+
+  // Tab switching
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => switchAuthTab(tab.dataset.auth));
+  });
+  $('#switchToRegister').addEventListener('click', () => switchAuthTab('register'));
+  $('#switchToLogin').addEventListener('click', () => switchAuthTab('login'));
+
+  // Login submit
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = $('#loginEmail').value.trim();
+    const password = $('#loginPassword').value.trim();
+    if (!email || !password) return;
+
+    const user = await login(email, password);
+    if (user) {
+      clearAuthErrors();
+      closeAuthModal();
+      enterDashboard(user);
+    } else {
+      $('#loginError').classList.add('visible');
+      $('#loginEmail').classList.add('error');
+      $('#loginPassword').classList.add('error');
+    }
+  });
+
+  // Register submit
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = $('#regName').value.trim();
+    const email = $('#regEmail').value.trim();
+    const password = $('#regPassword').value.trim();
+    const confirm = $('#regPasswordConfirm').value.trim();
+    const role = 'user'; // Sadece kullanıcılar kayıt olabilir
+
+    // Validation
+    $('#registerError').classList.remove('visible');
+    $('#registerSuccess').classList.remove('visible');
+
+    if (!name || !email || !password || !confirm) {
+      showRegError('Lütfen tüm alanları doldurun.');
+      return;
+    }
+    if (password.length < 6) {
+      showRegError('Şifre en az 6 karakter olmalıdır.');
+      return;
+    }
+    if (password !== confirm) {
+      showRegError('Şifreler eşleşmiyor.');
+      return;
+    }
+
+    const result = await register(name, email, password, role);
+    if (result.error) {
+      showRegError(result.error);
+    } else {
+      $('#registerSuccess').classList.add('visible');
+      registerForm.reset();
+      setTimeout(() => switchAuthTab('login'), 1500);
+    }
+  });
+
+  // Clear on input
+  $('#loginEmail').addEventListener('input', clearAuthErrors);
+  $('#loginPassword').addEventListener('input', clearAuthErrors);
+
+  // Learn more
+  $('#heroLearnBtn').addEventListener('click', () => {
+    document.querySelector('.features-section').scrollIntoView({ behavior: 'smooth' });
+  });
+}
+
+function openAuthModal() {
+  $('#loginOverlay').classList.add('active');
+  switchAuthTab('login');
+  setTimeout(() => $('#loginEmail').focus(), 300);
+}
+
+function closeAuthModal() {
+  $('#loginOverlay').classList.remove('active');
+  $('#loginForm').reset();
+  $('#registerForm').reset();
+  clearAuthErrors();
+  $('#registerSuccess').classList.remove('visible');
+  $('#registerError').classList.remove('visible');
+}
+
+function switchAuthTab(tab) {
+  $$('.auth-tab').forEach(t => t.classList.remove('active'));
+  $$(`.auth-tab[data-auth="${tab}"]`).forEach(t => t.classList.add('active'));
+  $$('.auth-form').forEach(f => f.classList.remove('active'));
+  $(`#${tab === 'login' ? 'loginForm' : 'registerForm'}`).classList.add('active');
+  clearAuthErrors();
+  $('#registerSuccess').classList.remove('visible');
+  $('#registerError').classList.remove('visible');
+}
+
+function clearAuthErrors() {
+  $('#loginError').classList.remove('visible');
+  $('#loginEmail').classList.remove('error');
+  $('#loginPassword').classList.remove('error');
+}
+
+function showRegError(msg) {
+  const el = $('#registerError');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+// ═══════════════════════════════════════════════
+// MOBILE
+// ═══════════════════════════════════════════════
+function initMobile() {
+  $('#mobileMenuBtn').addEventListener('click', () => {
+    $('#sidebar').classList.add('mobile-open');
+    $('#mobileOverlay').classList.add('active');
+  });
+  $('#mobileOverlay').addEventListener('click', closeMobileSidebar);
+}
+function closeMobileSidebar() {
+  $('#sidebar').classList.remove('mobile-open');
+  $('#mobileOverlay').classList.remove('active');
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN: OVERVIEW
+// ═══════════════════════════════════════════════
+function initAdminOverview() {
+  const users = getUsers();
+  const el = $('#adminUserCount');
+  if (el) el.textContent = users.length;
+
+  const banner = $('#bannerGreeting');
+  if (banner && currentUser) {
+    banner.textContent = `👋 Hoş Geldiniz, ${currentUser.name.split(' ')[0]}!`;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN: USERS TABLE
+// ═══════════════════════════════════════════════
+async function renderUsersTable() {
+  const tbody = $('#usersTableBody');
+  if (!tbody) return;
+
+  let users;
+  try {
+    const data = await Api.getUsers();
+    users = data.users || [];
+  } catch {
+    users = getUsers(); // Fallback: localStorage
+  }
+
+  tbody.innerHTML = users.map(u => `
+    <tr>
+      <td style="font-weight:600;">${u.name}</td>
+      <td>${u.email}</td>
+      <td><span class="role-badge ${u.role}">${u.role === 'admin' ? '🛡️ Admin' : '🛒 Kullanıcı'}</span></td>
+      <td>${formatDate(u.date)}</td>
+      <td><span class="status-active">● Aktif</span></td>
+    </tr>
+  `).join('');
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN: RECOMMENDATIONS
+// ═══════════════════════════════════════════════
+let recoInitialized = false;
+function initRecommendations() {
+  if (!recoInitialized) {
+    $('#refreshBtn').addEventListener('click', loadRecommendations);
+    $('#userSelect').addEventListener('change', loadRecommendations);
+    recoInitialized = true;
+  }
+  loadRecommendations();
+}
+
+async function loadRecommendations() {
+  const userId = $('#userSelect').value;
+  const grid = $('#productGrid');
+  const dot = $('#statusDot');
+  const text = $('#statusText');
+  const count = $('#resultsCount');
+
+  grid.innerHTML = '<div class="loading-container"><div class="spinner"></div><p>Yapay zeka sizin için en iyi ürünleri seçiyor...</p></div>';
+  count.textContent = 'Yükleniyor...';
+  dot.className = 'status-dot';
+  text.textContent = 'Bağlanıyor...';
+
+  try {
+    const data = await Api.getRecommendations(userId);
+    dot.className = 'status-dot active';
+    text.textContent = 'API Bağlı ✅';
+    renderRecoProducts(data.recommendations || []);
+  } catch {
+    text.textContent = 'Çevrimdışı (Örnek Veri)';
+    dot.className = 'status-dot error';
+    renderRecoProducts(CATALOG.slice(0, 8).map(p => ({ ...p, similarity_score: Math.random() * 0.3 + 0.65 })));
+  }
+}
+
+function renderRecoProducts(products) {
+  const grid = $('#productGrid');
+  const count = $('#resultsCount');
+  count.textContent = `${products.length} ürün bulundu`;
+
+  if (!products.length) {
+    grid.innerHTML = '<div class="loading-container"><p>😕 Bu kullanıcı için eşleşen ürün bulunamadı.</p></div>';
+    return;
+  }
+
+  grid.innerHTML = '';
+  products.forEach((p, i) => {
+    const icon = CATEGORY_ICONS[p.category] || CATEGORY_ICONS.default;
+    const score = Math.round((p.similarity_score || 0.75) * 100);
+    const card = document.createElement('div');
+    card.className = 'product-card glass-card';
+    card.style.animation = `fadeInUp 0.5s ease ${i * 0.08}s both`;
+    card.innerHTML = `
+      <div class="card-header"><span class="category">${p.category || 'Ürün'}</span><span class="match-score">%${score} Uyum</span></div>
+      <div class="card-icon">${icon}</div>
+      <h3 class="card-title">${p.name}</h3>
+      <span class="card-price">${p.price ? '₺' + p.price.toLocaleString('tr-TR') : ''}</span>
+    `;
+    card.addEventListener('click', () => openProductModal(p));
+    grid.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN: CHARTS
+// ═══════════════════════════════════════════════
+function renderCharts() {
+  renderBarChart('barChart', CHART_DATA.category);
+  renderDonutChart('donutChart', CHART_DATA.interaction);
+  renderBarChart('segmentChart', CHART_DATA.segment);
+}
+
+function renderBarChart(id, data) {
+  const el = $(`#${id}`);
+  if (!el) return;
+  const max = Math.max(...data.map(d => d.value));
+  el.innerHTML = data.map(d => `
+    <div class="bar-item"><span class="bar-value">${d.value}%</span><div class="bar" style="height:${(d.value/max)*100}%;background:${d.color};"></div><span class="bar-label">${d.label}</span></div>
+  `).join('');
+}
+
+function renderDonutChart(id, data) {
+  const el = $(`#${id}`);
+  if (!el) return;
+  const total = data.reduce((s, d) => s + d.value, 0);
+  let cum = 0;
+  const parts = data.map(d => { const s = cum; cum += (d.value / total) * 100; return `${d.color} ${s}% ${cum}%`; });
+  el.innerHTML = `
+    <div class="donut" style="background:conic-gradient(${parts.join(',')});">
+      <div class="donut-center"><span class="donut-value">${total}%</span><span class="donut-label">Toplam</span></div>
+    </div>
+    <div class="donut-legend">${data.map(d => `<div class="legend-item"><div class="legend-dot" style="background:${d.color};"></div><span>${d.label} (${d.value}%)</span></div>`).join('')}</div>
+  `;
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN: ENDPOINTS
+// ═══════════════════════════════════════════════
+function renderEndpoints() {
+  const el = $('#endpointList');
+  if (!el) return;
+  el.innerHTML = ENDPOINTS.map(ep => `
+    <div class="endpoint-item">
+      <span class="endpoint-method ${ep.method.toLowerCase()}">${ep.method}</span>
+      <span class="endpoint-path">${ep.path}</span>
+      <span class="endpoint-desc">${ep.desc}</span>
+      <div class="endpoint-status offline" title="Çevrimdışı"></div>
+    </div>
+  `).join('');
+  checkApiHealth();
+}
+
+async function checkApiHealth() {
+  try {
+    await Api.health();
+    $$('.endpoint-status').forEach(d => { d.classList.replace('offline', 'online'); d.title = 'Çevrimiçi'; });
+  } catch {}
+}
+
+// ═══════════════════════════════════════════════
+// USER: HOME
+// ═══════════════════════════════════════════════
+async function renderUserHome() {
+  const banner = $('#userBannerGreeting');
+  if (banner && currentUser) {
+    banner.textContent = `👋 Hoş Geldiniz, ${currentUser.name.split(' ')[0]}!`;
+  }
+
+  const grid = $('#userRecoGrid');
+  if (!grid) return;
+
+  let products;
+  try {
+    const data = await Api.getRecommendations(currentUser?.id || 1, 6);
+    products = data.recommendations || [];
+  } catch {
+    products = [...CATALOG].sort(() => Math.random() - 0.5).slice(0, 6);
+  }
+
+  grid.innerHTML = '';
+  products.forEach((p, i) => {
+    const card = createCatalogCard(p, i);
+    grid.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// USER: CATALOG
+// ═══════════════════════════════════════════════
+function renderCatalog() {
+  renderCatalogFilters();
+  renderCatalogGrid();
+}
+
+function renderCatalogFilters() {
+  const container = $('#catalogFilters');
+  if (!container) return;
+
+  const counts = {};
+  CATALOG.forEach(p => { counts[p.category] = (counts[p.category] || 0) + 1; });
+
+  const allBtn = `<button class="filter-btn ${currentCatalogFilter === 'Tümü' ? 'active' : ''}" data-filter="Tümü">Tümü <span class="filter-count">${CATALOG.length}</span></button>`;
+  const catBtns = CATEGORIES.map(c =>
+    `<button class="filter-btn ${currentCatalogFilter === c ? 'active' : ''}" data-filter="${c}">${CATEGORY_ICONS[c] || '📦'} ${c} <span class="filter-count">${counts[c]}</span></button>`
+  ).join('');
+
+  container.innerHTML = allBtn + catBtns;
+
+  container.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentCatalogFilter = btn.dataset.filter;
+      renderCatalog();
+    });
+  });
+}
+
+async function renderCatalogGrid() {
+  const grid = $('#catalogGrid');
+  if (!grid) return;
+
+  let products;
+  try {
+    const data = await Api.getProducts(currentCatalogFilter);
+    products = data.products || [];
+  } catch {
+    products = currentCatalogFilter === 'Tümü' ? CATALOG : CATALOG.filter(p => p.category === currentCatalogFilter);
+  }
+
+  grid.innerHTML = '';
+  products.forEach((p, i) => {
+    const card = createCatalogCard(p, i);
+    grid.appendChild(card);
+  });
+}
+
+function createCatalogCard(product, index) {
+  const card = document.createElement('div');
+  card.className = 'catalog-card glass-card';
+  card.style.animation = `fadeInUp 0.4s ease ${index * 0.05}s both`;
+
+  card.innerHTML = `
+    <div class="card-icon">${product.icon}</div>
+    <div class="card-category">${product.category}</div>
+    <h3 class="card-title">${product.name}</h3>
+    <p class="card-desc">${product.desc}</p>
+    <div class="card-bottom">
+      <span class="card-price">₺${product.price.toLocaleString('tr-TR')}</span>
+      <span class="card-stock">Stok: ${product.stock}</span>
+    </div>
+    <button class="btn btn-add-cart" data-id="${product.id}">🛒 Sepete Ekle</button>
+  `;
+
+  // Click card to open modal
+  card.addEventListener('click', (e) => {
+    if (e.target.classList.contains('btn-add-cart')) return;
+    openProductModal(product);
+  });
+
+  // Add to cart button
+  card.querySelector('.btn-add-cart').addEventListener('click', (e) => {
+    e.stopPropagation();
+    addToCart(product);
+  });
+
+  return card;
+}
+
+// ═══════════════════════════════════════════════
+// USER: CART
+// ═══════════════════════════════════════════════
+function addToCart(product) {
+  const existing = cart.find(item => item.id === product.id);
+  if (existing) {
+    existing.qty++;
+  } else {
+    cart.push({ ...product, qty: 1 });
+  }
+  saveCart();
+
+  // Visual feedback: brief button text change
+  const btn = document.querySelector(`.btn-add-cart[data-id="${product.id}"]`);
+  if (btn) {
+    const original = btn.textContent;
+    btn.textContent = '✅ Eklendi!';
+    btn.style.background = 'var(--pastel-mint-light)';
+    setTimeout(() => { btn.textContent = original; btn.style.background = ''; }, 1000);
+  }
+}
+
+function removeFromCart(productId) {
+  cart = cart.filter(item => item.id !== productId);
+  saveCart();
+  renderCart();
+}
+
+function updateCartQty(productId, delta) {
+  const item = cart.find(i => i.id === productId);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) { removeFromCart(productId); return; }
+  saveCart();
+  renderCart();
+}
+
+function renderCart() {
+  const container = $('#cartContent');
+  if (!container) return;
+
+  if (cart.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🛒</div>
+        <p>Sepetiniz boş</p>
+        <p class="empty-sub">Kategoriler sayfasından ürün ekleyebilirsiniz.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const shipping = subtotal > 500 ? 0 : 29.90;
+  const total = subtotal + shipping;
+
+  container.innerHTML = `
+    <div class="cart-container">
+      <div class="cart-items">
+        ${cart.map(item => `
+          <div class="cart-item glass-card">
+            <div class="item-icon">${item.icon}</div>
+            <div class="item-info">
+              <div class="item-name">${item.name}</div>
+              <div class="item-category">${item.category}</div>
+            </div>
+            <div class="qty-controls">
+              <button class="qty-btn" onclick="updateCartQty(${item.id}, -1)">−</button>
+              <span class="qty-value">${item.qty}</span>
+              <button class="qty-btn" onclick="updateCartQty(${item.id}, 1)">+</button>
+            </div>
+            <div class="item-price">₺${(item.price * item.qty).toLocaleString('tr-TR')}</div>
+            <button class="remove-btn" onclick="removeFromCart(${item.id})">✕</button>
+          </div>
+        `).join('')}
+      </div>
+      <div class="cart-summary glass-card">
+        <h3>Sipariş Özeti</h3>
+        <div class="summary-row"><span>Ara Toplam</span><span>₺${subtotal.toLocaleString('tr-TR')}</span></div>
+        <div class="summary-row"><span>Kargo</span><span>${shipping === 0 ? 'Ücretsiz' : '₺' + shipping.toLocaleString('tr-TR')}</span></div>
+        <div class="summary-row total"><span>Toplam</span><span>₺${total.toLocaleString('tr-TR')}</span></div>
+        <button class="checkout-btn" onclick="checkout()">💳 Satın Al</button>
+        ${subtotal > 500 ? '<p style="text-align:center;font-size:0.75rem;color:var(--success);margin-top:0.5rem;">🎉 500₺ üzeri ücretsiz kargo!</p>' : ''}
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════
+// USER: CHECKOUT
+// ═══════════════════════════════════════════════
+function checkout() {
+  if (cart.length === 0) return;
+
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const shipping = subtotal > 500 ? 0 : 29.90;
+  const total = subtotal + shipping;
+
+  const order = {
+    id: 'SHP-' + Date.now().toString(36).toUpperCase(),
+    date: new Date().toISOString(),
+    items: cart.map(item => ({ name: item.name, qty: item.qty, price: item.price, icon: item.icon })),
+    subtotal, shipping, total,
+    status: 'processing',
+    userEmail: currentUser.email,
+  };
+
+  const orders = getOrders();
+  orders.unshift(order);
+  saveOrders(orders);
+
+  // Clear cart
+  cart = [];
+  saveCart();
+
+  // Show success
+  const container = $('#cartContent');
+  container.innerHTML = `
+    <div class="empty-state" style="animation: fadeInUp 0.5s ease;">
+      <div class="empty-icon">🎉</div>
+      <p style="font-weight:700;color:var(--text-primary);font-size:1.1rem;">Siparişiniz Alındı!</p>
+      <p class="empty-sub">Sipariş No: <strong>${order.id}</strong></p>
+      <p class="empty-sub">Toplam: <strong>₺${total.toLocaleString('tr-TR')}</strong></p>
+      <button class="btn btn-primary" style="margin-top:1.5rem;" onclick="document.querySelector('[data-panel=user-orders]').click()">📦 Siparişlerimi Gör</button>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════
+// USER: ORDERS
+// ═══════════════════════════════════════════════
+function renderOrders() {
+  const container = $('#ordersContent');
+  if (!container) return;
+
+  const allOrders = getOrders();
+  const myOrders = currentUser ? allOrders.filter(o => o.userEmail === currentUser.email) : [];
+
+  if (myOrders.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📦</div>
+        <p>Henüz siparişiniz yok</p>
+        <p class="empty-sub">İlk siparişinizi vermek için alışverişe başlayın.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="orders-list">
+      ${myOrders.map(order => `
+        <div class="order-card glass-card">
+          <div class="order-header">
+            <span class="order-id">${order.id}</span>
+            <span class="order-date">${new Date(order.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+            <span class="order-status ${order.status}">${order.status === 'delivered' ? '✅ Teslim Edildi' : '🔄 Hazırlanıyor'}</span>
+          </div>
+          <div class="order-items-list">
+            ${order.items.map(item => `
+              <div class="order-item-row">
+                <span>${item.icon} ${item.name} × ${item.qty}</span>
+                <span>₺${(item.price * item.qty).toLocaleString('tr-TR')}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="order-total">Toplam: ₺${order.total.toLocaleString('tr-TR')}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════
+// PRODUCT MODAL
+// ═══════════════════════════════════════════════
+function initProductModal() {
+  $('#productModalClose').addEventListener('click', closeProductModal);
+  $('#modalCancelBtn').addEventListener('click', closeProductModal);
+  $('#productModalOverlay').addEventListener('click', (e) => {
+    if (e.target === $('#productModalOverlay')) closeProductModal();
+  });
+  $('#modalAddCartBtn').addEventListener('click', () => {
+    if (currentModalProduct) {
+      addToCart(currentModalProduct);
+      closeProductModal();
+    }
+  });
+}
+
+function openProductModal(product) {
+  currentModalProduct = product;
+  const icon = product.icon || CATEGORY_ICONS[product.category] || CATEGORY_ICONS.default;
+  const score = product.similarity_score ? Math.round(product.similarity_score * 100) : null;
+
+  $('#modalIcon').textContent = icon;
+  $('#modalTitle').textContent = product.name;
+  $('#modalDesc').innerHTML = `
+    ${product.desc ? product.desc + '<br><br>' : ''}
+    ${score ? `<strong>Uyum Oranı:</strong> %${score}<br>` : ''}
+    <strong>Kategori:</strong> ${product.category || 'Belirtilmemiş'}<br>
+    <strong>Fiyat:</strong> ${product.price ? '₺' + product.price.toLocaleString('tr-TR') : 'Belirtilmemiş'}<br>
+    ${product.stock ? `<strong>Stok:</strong> ${product.stock} adet` : ''}
+  `;
+
+  // Show/hide add to cart based on role
+  const addBtn = $('#modalAddCartBtn');
+  addBtn.style.display = (currentUser && currentUser.role === 'user') ? '' : 'none';
+
+  $('#productModalOverlay').classList.add('active');
+}
+
+function closeProductModal() {
+  $('#productModalOverlay').classList.remove('active');
+  currentModalProduct = null;
+}
+
+// ═══════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if ($('#loginOverlay').classList.contains('active')) closeAuthModal();
+    if ($('#productModalOverlay').classList.contains('active')) closeProductModal();
+    closeMobileSidebar();
+  }
+});
+
+// Make cart functions globally accessible for inline onclick handlers
+window.updateCartQty = updateCartQty;
+window.removeFromCart = removeFromCart;
+window.checkout = checkout;
