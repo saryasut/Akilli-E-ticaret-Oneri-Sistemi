@@ -2,13 +2,13 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import logging
 
-# Ortak veri kaynağı
 from src.api.shared_data import (
     CATALOG, get_products_by_category, get_product_by_id,
     authenticate, register_user, get_recommendations,
     add_to_cart, get_cart, remove_from_cart,
-    create_order, get_user_orders,
-    log_interaction, get_system_stats, users_db
+    create_order, get_user_orders, cancel_order,
+    log_interaction, get_system_stats, users_db,
+    update_user_details, change_user_password, delete_user_account
 )
 
 app = Flask(__name__)
@@ -170,16 +170,67 @@ def api_get_orders(user_email):
 @app.route('/api/v1/orders/<user_email>', methods=['POST'])
 def api_create_order(user_email):
     """Sipariş oluştur"""
-    result = create_order(user_email)
+    data = request.get_json(silent=True) or {}
+    shipping = data.get("shipping_address")
+    payment = data.get("payment_method")
+    result = create_order(user_email, shipping, payment)
     if "error" in result:
         return jsonify(result), 400
 
     app.logger.info(f"Sipariş oluşturuldu: {result['id']} — {user_email}")
     return jsonify(result), 201
 
+@app.route('/api/v1/orders/<user_email>/cancel/<order_id>', methods=['POST'])
+def api_cancel_order(user_email, order_id):
+    """Siparişi iptal et"""
+    result = cancel_order(user_email, order_id)
+    if "error" in result:
+        return jsonify(result), 400
+    
+    app.logger.info(f"Sipariş iptal edildi: {order_id} — {user_email}")
+    return jsonify(result), 200
+
+# ═══════════════════════════════════════════════
+# PROFILE & ACCOUNT MANAGEMENT
+# ═══════════════════════════════════════════════
+
+@app.route('/api/v1/users/profile/update-details/<email>', methods=['POST'])
+def api_update_details(email):
+    """Kullanıcı ad soyad bilgilerini güncelle"""
+    data = request.get_json()
+    if not data or "name" not in data:
+        return jsonify({"error": "İsim alanı zorunludur."}), 400
+    
+    result = update_user_details(email, data["name"])
+    if "error" in result:
+        return jsonify(result), 404
+    return jsonify(result)
+
+@app.route('/api/v1/users/profile/change-password/<email>', methods=['POST'])
+def api_change_password(email):
+    """Kullanıcı şifresini değiştir"""
+    data = request.get_json()
+    if not data or "old_password" not in data or "new_password" not in data:
+        return jsonify({"error": "Eski ve yeni şifre gereklidir."}), 400
+    
+    result = change_user_password(email, data["old_password"], data["new_password"])
+    if "error" in result:
+        return jsonify(result), 400
+    return jsonify(result)
+
+@app.route('/api/v1/users/profile/<email>', methods=['DELETE'])
+def api_delete_account(email):
+    """Kullanıcı hesabını kalıcı olarak sil"""
+    result = delete_user_account(email)
+    if "error" in result:
+        return jsonify(result), 404
+    return jsonify(result)
+
+
 # ═══════════════════════════════════════════════
 # ROOT
 # ═══════════════════════════════════════════════
+
 
 @app.route('/')
 def home():

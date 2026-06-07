@@ -8,8 +8,9 @@ from src.api.shared_data import (
     CATALOG, get_products_by_category, get_product_by_id,
     authenticate, register_user, get_recommendations,
     add_to_cart, get_cart, remove_from_cart,
-    create_order, get_user_orders,
-    log_interaction, get_system_stats, users_db
+    create_order, get_user_orders, cancel_order,
+    log_interaction, get_system_stats, users_db,
+    update_user_details, change_user_password, delete_user_account
 )
 
 app = FastAPI(
@@ -50,6 +51,18 @@ class InteractionRequest(BaseModel):
 
 class OrderRequest(BaseModel):
     user_email: str
+
+class OrderCreateRequest(BaseModel):
+    shipping_address: Optional[dict] = None
+    payment_method: Optional[str] = None
+
+class UpdateProfileRequest(BaseModel):
+    name: str
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
 
 # ═══════════════════════════════════════════════
 # HEALTH
@@ -180,16 +193,56 @@ def api_get_orders(user_email: str):
     }
 
 @app.post("/api/v1/orders/{user_email}", tags=["Siparişler"])
-def api_create_order(user_email: str):
+def api_create_order(user_email: str, req: Optional[OrderCreateRequest] = None):
     """Sepetteki ürünlerden sipariş oluştur"""
-    result = create_order(user_email)
+    shipping = req.shipping_address if req else None
+    payment = req.payment_method if req else None
+    result = create_order(user_email, shipping, payment)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+@app.post("/api/v1/orders/{user_email}/cancel/{order_id}", tags=["Siparişler"])
+def api_cancel_order(user_email: str, order_id: str):
+    """Siparişi iptal et"""
+    result = cancel_order(user_email, order_id)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
 
 # ═══════════════════════════════════════════════
+# PROFILE & ACCOUNT MANAGEMENT
+# ═══════════════════════════════════════════════
+
+@app.post("/api/v1/users/profile/update-details/{email}", tags=["Profil"])
+def api_update_details(email: str, req: UpdateProfileRequest):
+    """Kullanıcı ad soyad bilgilerini güncelle"""
+    result = update_user_details(email, req.name)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+@app.post("/api/v1/users/profile/change-password/{email}", tags=["Profil"])
+def api_change_password(email: str, req: ChangePasswordRequest):
+    """Kullanıcı şifresini değiştir"""
+    result = change_user_password(email, req.old_password, req.new_password)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+@app.delete("/api/v1/users/profile/{email}", tags=["Profil"])
+def api_delete_account(email: str):
+    """Kullanıcı hesabını kalıcı olarak sil"""
+    result = delete_user_account(email)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+# ═══════════════════════════════════════════════
 # ROOT — Frontend serve
 # ═══════════════════════════════════════════════
+
 
 @app.get("/", tags=["Root"])
 def root():

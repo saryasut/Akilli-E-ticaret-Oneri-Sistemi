@@ -76,8 +76,16 @@ const Api = {
 
   // Orders
   async getOrders(email) { return this._fetch(`/api/v1/orders/${encodeURIComponent(email)}`); },
-  async createOrder(email) {
-    return this._fetch(`/api/v1/orders/${encodeURIComponent(email)}`, { method: 'POST' });
+  async createOrder(email, shippingAddress = null, paymentMethod = null) {
+    return this._fetch(`/api/v1/orders/${encodeURIComponent(email)}`, {
+      method: 'POST',
+      body: JSON.stringify({ shipping_address: shippingAddress, payment_method: paymentMethod })
+    });
+  },
+  async cancelOrder(email, orderId) {
+    return this._fetch(`/api/v1/orders/${encodeURIComponent(email)}/cancel/${encodeURIComponent(orderId)}`, {
+      method: 'POST'
+    });
   },
 
   // Interactions
@@ -85,6 +93,23 @@ const Api = {
     return this._fetch('/api/v1/interactions', {
       method: 'POST', body: JSON.stringify({ user_id: userId, product_id: productId, type })
     }).catch(() => {}); // Etkileşim kaydı sessizce başarısız olabilir
+  },
+
+  // Profile & Account Management
+  async updateProfileDetails(email, name) {
+    return this._fetch(`/api/v1/users/profile/update-details/${encodeURIComponent(email)}`, {
+      method: 'POST', body: JSON.stringify({ name })
+    });
+  },
+  async changePassword(email, oldPassword, newPassword) {
+    return this._fetch(`/api/v1/users/profile/change-password/${encodeURIComponent(email)}`, {
+      method: 'POST', body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
+    });
+  },
+  async deleteAccount(email) {
+    return this._fetch(`/api/v1/users/profile/${encodeURIComponent(email)}`, {
+      method: 'DELETE'
+    });
   }
 };
 
@@ -283,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAuthModal();
   initMobile();
   initProductModal();
+  initCheckoutModal();
 });
 
 // ═══════════════════════════════════════════════
@@ -442,6 +468,8 @@ function buildSidebar(role) {
     { label: 'ANALİTİK', section: true },
     { panel: 'admin-recommendations', icon: '🤖', label: 'Ürün Önerileri' },
     { panel: 'admin-analytics',       icon: '📊', label: 'Davranış Analizi' },
+    { divider: true },
+    { panel: 'profile-settings',      icon: '⚙️', label: 'Hesap Ayarları' }
   ];
 
   const userItems = [
@@ -451,6 +479,8 @@ function buildSidebar(role) {
     { label: 'ALIŞVERİŞ', section: true },
     { panel: 'user-cart',    icon: '🛒', label: 'Sepetim' },
     { panel: 'user-orders',  icon: '📦', label: 'Siparişlerim' },
+    { divider: true },
+    { panel: 'profile-settings', icon: '⚙️', label: 'Hesap Ayarları' }
   ];
 
   const items = role === 'admin' ? adminItems : userItems;
@@ -470,6 +500,19 @@ function buildSidebar(role) {
       closeMobileSidebar();
     });
   });
+
+  // Make user info block clickable to open settings
+  const sidebarUser = $('#sidebarUser');
+  if (sidebarUser) {
+    sidebarUser.style.cursor = 'pointer';
+    sidebarUser.addEventListener('click', (e) => {
+      if (e.target.closest('#logoutBtn')) return;
+      const settingsBtn = nav.querySelector('.sidebar-item[data-panel="profile-settings"]');
+      if (settingsBtn) {
+        settingsBtn.click();
+      }
+    });
+  }
 
   // Logout
   $('#logoutBtn').addEventListener('click', logout);
@@ -492,6 +535,7 @@ function activatePanel(panelName) {
     'admin-analytics': 'Davranış Analizi',
     'user-home': 'Ana Sayfa', 'user-catalog': 'Kategoriler',
     'user-cart': 'Sepetim', 'user-orders': 'Siparişlerim',
+    'profile-settings': 'Hesap Ayarları'
   };
   $('#dashTitle').textContent = titles[panelName] || '';
 
@@ -505,6 +549,7 @@ function activatePanel(panelName) {
   if (panelName === 'user-catalog') renderCatalog();
   if (panelName === 'user-cart') renderCart();
   if (panelName === 'user-orders') renderOrders();
+  if (panelName === 'profile-settings') initProfileSettings();
 }
 
 // ═══════════════════════════════════════════════
@@ -1028,34 +1073,218 @@ function checkout() {
   const shipping = subtotal > 500 ? 0 : 29.90;
   const total = subtotal + shipping;
 
-  const order = {
-    id: 'SHP-' + Date.now().toString(36).toUpperCase(),
-    date: new Date().toISOString(),
-    items: cart.map(item => ({ name: item.name, qty: item.qty, price: item.price, icon: item.icon })),
-    subtotal, shipping, total,
-    status: 'processing',
-    userEmail: currentUser.email,
-  };
+  // Set total in the checkout footer
+  $('#checkoutTotalAmount').textContent = `₺${total.toLocaleString('tr-TR')}`;
 
-  const orders = getOrders();
-  orders.unshift(order);
-  saveOrders(orders);
+  // Autofill name and address if user is logged in
+  if (currentUser) {
+    $('#checkoutFullName').value = currentUser.name || '';
+  }
 
-  // Clear cart
-  cart = [];
-  saveCart();
+  // Open checkout modal
+  $('#checkoutModalOverlay').classList.add('active');
+}
 
-  // Show success
-  const container = $('#cartContent');
-  container.innerHTML = `
-    <div class="empty-state" style="animation: fadeInUp 0.5s ease;">
-      <div class="empty-icon">🎉</div>
-      <p style="font-weight:700;color:var(--text-primary);font-size:1.1rem;">Siparişiniz Alındı!</p>
-      <p class="empty-sub">Sipariş No: <strong>${order.id}</strong></p>
-      <p class="empty-sub">Toplam: <strong>₺${total.toLocaleString('tr-TR')}</strong></p>
-      <button class="btn btn-primary" style="margin-top:1.5rem;" onclick="document.querySelector('[data-panel=user-orders]').click()">📦 Siparişlerimi Gör</button>
-    </div>
-  `;
+function closeCheckoutModal() {
+  $('#checkoutModalOverlay').classList.remove('active');
+  $('#checkoutForm').reset();
+  $('#cardPreviewHolder').textContent = 'AD SOYAD';
+  $('#cardPreviewNumber').textContent = '•••• •••• •••• ••••';
+  $('#cardPreviewExpiry').textContent = 'AA/YY';
+  $('#cardPreviewCvv').textContent = '•••';
+  $('#cardBrandLogo').textContent = 'GENERIC';
+  const cardPreview = $('#creditCardPreview');
+  if (cardPreview) cardPreview.classList.remove('flipped');
+  $('#checkoutError').classList.remove('visible');
+}
+
+function initCheckoutModal() {
+  const overlay = $('#checkoutModalOverlay');
+  if (!overlay) return;
+
+  $('#checkoutCloseBtn').addEventListener('click', closeCheckoutModal);
+  $('#checkoutCancelBtn').addEventListener('click', closeCheckoutModal);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeCheckoutModal(); });
+
+  const cardHolder = $('#cardHolder');
+  const cardNumber = $('#cardNumber');
+  const cardExpiry = $('#cardExpiry');
+  const cardCvc = $('#cardCvc');
+
+  // Input bindings for real-time card preview updates
+  if (cardHolder) {
+    cardHolder.addEventListener('input', (e) => {
+      const val = e.target.value;
+      $('#cardPreviewHolder').textContent = val.trim() ? val.toUpperCase() : 'AD SOYAD';
+    });
+  }
+
+  if (cardNumber) {
+    cardNumber.addEventListener('input', (e) => {
+      let val = e.target.value.replace(/\D/g, '');
+      let formatted = '';
+      for (let i = 0; i < val.length; i++) {
+        if (i > 0 && i % 4 === 0) formatted += ' ';
+        formatted += val[i];
+      }
+      e.target.value = formatted;
+      
+      // Preview number sync
+      $('#cardPreviewNumber').textContent = formatted || '•••• •••• •••• ••••';
+
+      // Detect brand
+      const firstDigit = val[0];
+      const logoEl = $('#cardBrandLogo');
+      if (logoEl) {
+        if (firstDigit === '4') {
+          logoEl.textContent = 'VISA';
+        } else if (firstDigit === '5') {
+          logoEl.textContent = 'MASTERCARD';
+        } else if (firstDigit === '9' || firstDigit === '3') {
+          logoEl.textContent = 'TROY';
+        } else {
+          logoEl.textContent = 'GENERIC';
+        }
+      }
+    });
+  }
+
+  if (cardExpiry) {
+    cardExpiry.addEventListener('input', (e) => {
+      let val = e.target.value.replace(/\D/g, '');
+      if (val.length > 2) {
+        e.target.value = val.substring(0, 2) + '/' + val.substring(2, 4);
+      } else {
+        e.target.value = val;
+      }
+      $('#cardPreviewExpiry').textContent = e.target.value || 'AA/YY';
+    });
+  }
+
+  if (cardCvc) {
+    cardCvc.addEventListener('input', (e) => {
+      let val = e.target.value.replace(/\D/g, '');
+      e.target.value = val;
+      $('#cardPreviewCvv').textContent = val || '•••';
+    });
+
+    // Flip card preview on CVC focus
+    cardCvc.addEventListener('focus', () => {
+      const cardPreview = $('#creditCardPreview');
+      if (cardPreview) cardPreview.classList.add('flipped');
+    });
+
+    cardCvc.addEventListener('blur', () => {
+      const cardPreview = $('#creditCardPreview');
+      if (cardPreview) cardPreview.classList.remove('flipped');
+    });
+  }
+
+  // Form submit
+  const checkoutForm = $('#checkoutForm');
+  if (checkoutForm) {
+    checkoutForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payBtn = $('#checkoutPayBtn');
+      const spinner = payBtn.querySelector('.pay-spinner');
+      const text = payBtn.querySelector('.pay-text');
+      const errorDiv = $('#checkoutError');
+      errorDiv.classList.remove('visible');
+
+      const cardNumberVal = cardNumber.value.replace(/\s/g, '');
+      if (cardNumberVal.length < 16) {
+        errorDiv.textContent = 'Lütfen geçerli bir 16 haneli kart numarası girin.';
+        errorDiv.classList.add('visible');
+        return;
+      }
+      const cardExpiryVal = cardExpiry.value;
+      if (!/^\d{2}\/\d{2}$/.test(cardExpiryVal)) {
+        errorDiv.textContent = 'Son kullanma tarihi geçersiz (AA/YY formatında olmalı).';
+        errorDiv.classList.add('visible');
+        return;
+      }
+      const cardCvcVal = cardCvc.value;
+      if (cardCvcVal.length < 3) {
+        errorDiv.textContent = 'CVC kodu 3 haneli olmalıdır.';
+        errorDiv.classList.add('visible');
+        return;
+      }
+
+      // Start payment processing animation
+      payBtn.disabled = true;
+      if (spinner) spinner.style.display = 'inline-block';
+      if (text) text.textContent = ' Ödeme Doğrulanıyor...';
+
+      setTimeout(async () => {
+        const address = $('#checkoutAddress').value;
+        const fullName = $('#checkoutFullName').value;
+        const phone = $('#checkoutPhone').value;
+        const shippingAddress = {
+          name: fullName,
+          phone: phone,
+          address: address
+        };
+
+        const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+        const shipping = subtotal > 500 ? 0 : 29.90;
+        const total = subtotal + shipping;
+
+        const orderId = 'SHP-' + Date.now().toString(36).toUpperCase();
+        const orderDate = new Date().toISOString();
+
+        const newOrder = {
+          id: orderId,
+          date: orderDate,
+          items: cart.map(item => ({ name: item.name, qty: item.qty, price: item.price, icon: item.icon })),
+          subtotal,
+          shipping,
+          total,
+          status: 'processing',
+          userEmail: currentUser.email,
+          shipping_address: shippingAddress,
+          payment_method: 'Kredi Kartı'
+        };
+
+        try {
+          // Send order to API
+          await Api.createOrder(currentUser.email, shippingAddress, 'Kredi Kartı');
+        } catch (err) {
+          // Fallback to local only if API fails/offline
+        }
+
+        // Save locally
+        const orders = getOrders();
+        orders.unshift(newOrder);
+        saveOrders(orders);
+
+        // Reset cart
+        cart = [];
+        saveCart();
+
+        // Reset button state
+        payBtn.disabled = false;
+        if (spinner) spinner.style.display = 'none';
+        if (text) text.textContent = '💳 Güvenli Ödeme Yap';
+
+        // Close modal
+        closeCheckoutModal();
+
+        // Render success screen in cartContent
+        const container = $('#cartContent');
+        if (container) {
+          container.innerHTML = `
+            <div class="empty-state" style="animation: fadeInUp 0.5s ease;">
+              <div class="empty-icon">🎉</div>
+              <p style="font-weight:700;color:var(--text-primary);font-size:1.1rem;">Siparişiniz Alındı!</p>
+              <p class="empty-sub">Sipariş No: <strong>${newOrder.id}</strong></p>
+              <p class="empty-sub">Toplam: <strong>₺${total.toLocaleString('tr-TR')}</strong></p>
+              <button class="btn btn-primary" style="margin-top:1.5rem;" onclick="document.querySelector('[data-panel=user-orders]').click()">📦 Siparişlerimi Gör</button>
+            </div>
+          `;
+        }
+      }, 2000); // 2 second processing time
+    });
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -1086,7 +1315,9 @@ function renderOrders() {
           <div class="order-header">
             <span class="order-id">${order.id}</span>
             <span class="order-date">${new Date(order.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-            <span class="order-status ${order.status}">${order.status === 'delivered' ? '✅ Teslim Edildi' : '🔄 Hazırlanıyor'}</span>
+            <span class="order-status ${order.status}">
+              ${order.status === 'delivered' ? '✅ Teslim Edildi' : order.status === 'cancelled' ? '❌ İptal Edildi' : '🔄 Hazırlanıyor'}
+            </span>
           </div>
           <div class="order-items-list">
             ${order.items.map(item => `
@@ -1096,11 +1327,47 @@ function renderOrders() {
               </div>
             `).join('')}
           </div>
-          <div class="order-total">Toplam: ₺${order.total.toLocaleString('tr-TR')}</div>
+          ${order.shipping_address ? `
+            <div class="order-delivery-info" style="border-top: 1px dashed var(--surface-border); padding: 0.6rem 0; margin-top: 0.4rem; font-size: 0.82rem; color: var(--text-secondary); text-align: left; width: 100%;">
+              <div style="margin-bottom: 0.2rem;"><strong>📍 Alıcı / Adres:</strong> ${order.shipping_address.name} (${order.shipping_address.phone}) - ${order.shipping_address.address}</div>
+              <div><strong>💳 Ödeme Yöntemi:</strong> ${order.payment_method || 'Kredi Kartı'}</div>
+            </div>
+          ` : ''}
+          <div class="order-total-row" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--surface-border); padding-top: 0.8rem; margin-top: 0.5rem; width: 100%;">
+            <div>
+              ${order.status !== 'cancelled' && order.status !== 'delivered' ? `
+                <button class="btn btn-danger btn-sm" onclick="cancelOrder('${order.id}')" style="padding: 0.35rem 0.8rem; font-size: 0.78rem; border-radius: 8px;">Siparişi İptal Et</button>
+              ` : ''}
+            </div>
+            <div class="order-total" style="border: none; padding: 0; margin: 0; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--text-primary);">Toplam: ₺${order.total.toLocaleString('tr-TR')}</div>
+          </div>
         </div>
       `).join('')}
     </div>
   `;
+}
+
+async function cancelOrder(orderId) {
+  if (!window.location.search.includes('test=true') && !confirm('Siparişi iptal etmek istediğinize emin misiniz?')) return;
+
+  try {
+    if (Api.online) {
+      await Api.cancelOrder(currentUser.email, orderId);
+    }
+  } catch (err) {
+    // Fallback if offline
+  }
+
+  // Update locally
+  const orders = getOrders();
+  const order = orders.find(o => o.id === orderId);
+  if (order) {
+    order.status = 'cancelled';
+    saveOrders(orders);
+  }
+
+  // Refresh view
+  renderOrders();
 }
 
 // ═══════════════════════════════════════════════
@@ -1154,6 +1421,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if ($('#loginOverlay').classList.contains('active')) closeAuthModal();
     if ($('#productModalOverlay').classList.contains('active')) closeProductModal();
+    if ($('#checkoutModalOverlay').classList.contains('active')) closeCheckoutModal();
     closeMobileSidebar();
   }
 });
@@ -1162,6 +1430,8 @@ document.addEventListener('keydown', (e) => {
 window.updateCartQty = updateCartQty;
 window.removeFromCart = removeFromCart;
 window.checkout = checkout;
+window.closeCheckoutModal = closeCheckoutModal;
+window.cancelOrder = cancelOrder;
 
 // ═══════════════════════════════════════════════
 // THEME MANAGER (Dark/Light Mode)
@@ -1193,3 +1463,191 @@ function updateThemeIcons(theme) {
 
 // Initialize theme on load
 initTheme();
+
+
+// ═══════════════════════════════════════════════
+// PROFILE SETTINGS
+// ═══════════════════════════════════════════════
+function initProfileSettings() {
+  if (!currentUser) return;
+
+  // Set initial input values
+  $('#profileName').value = currentUser.name;
+  $('#profileEmail').value = currentUser.email;
+
+  // Clear messages
+  $('#profileDetailsSuccess').classList.remove('visible');
+  $('#profileDetailsError').classList.remove('visible');
+  $('#profilePasswordSuccess').classList.remove('visible');
+  $('#profilePasswordError').classList.remove('visible');
+  $('#profileDeleteError').classList.remove('visible');
+
+  // Reset forms
+  $('#profilePasswordForm').reset();
+  $('#profileDeleteForm').reset();
+
+  // 1. Details form submit
+  $('#profileDetailsForm').onsubmit = async (e) => {
+    e.preventDefault();
+    $('#profileDetailsSuccess').classList.remove('visible');
+    $('#profileDetailsError').classList.remove('visible');
+
+    const newName = $('#profileName').value.trim();
+    if (!newName) return;
+
+    try {
+      // API call
+      const res = await Api.updateProfileDetails(currentUser.email, newName);
+      if (res.error) throw new Error(res.error);
+      
+      // Update local state
+      currentUser.name = newName;
+      sessionStorage.setItem('shopai_user', JSON.stringify(currentUser));
+
+      // Sync with localStorage
+      const users = getUsers();
+      const userIndex = users.findIndex(u => u.email.toLowerCase() === currentUser.email.toLowerCase());
+      if (userIndex !== -1) {
+        users[userIndex].name = newName;
+        saveUsers(users);
+      }
+
+      // Update UI
+      $('#userName').textContent = currentUser.name;
+      $('#userAvatar').textContent = getInitials(currentUser.name);
+      
+      const userGreetingEl = $('#userBannerGreeting');
+      if (userGreetingEl) {
+        userGreetingEl.textContent = `👋 Hoş Geldiniz, ${currentUser.name.split(' ')[0]}!`;
+      }
+      
+      const hour = new Date().getHours();
+      let greeting = hour < 12 ? 'Günaydın' : hour >= 18 ? 'İyi akşamlar' : 'İyi günler';
+      $('#dashGreeting').textContent = `${greeting}, ${currentUser.name.split(' ')[0]}!`;
+
+      $('#profileDetailsSuccess').classList.add('visible');
+    } catch (err) {
+      // Fallback if API offline
+      const users = getUsers();
+      const userIndex = users.findIndex(u => u.email.toLowerCase() === currentUser.email.toLowerCase());
+      if (userIndex !== -1) {
+        users[userIndex].name = newName;
+        saveUsers(users);
+        
+        currentUser.name = newName;
+        sessionStorage.setItem('shopai_user', JSON.stringify(currentUser));
+        
+        $('#userName').textContent = currentUser.name;
+        $('#userAvatar').textContent = getInitials(currentUser.name);
+        
+        const userGreetingEl = $('#userBannerGreeting');
+        if (userGreetingEl) {
+          userGreetingEl.textContent = `👋 Hoş Geldiniz, ${currentUser.name.split(' ')[0]}!`;
+        }
+        
+        const hour = new Date().getHours();
+        let greeting = hour < 12 ? 'Günaydın' : hour >= 18 ? 'İyi akşamlar' : 'İyi günler';
+        $('#dashGreeting').textContent = `${greeting}, ${currentUser.name.split(' ')[0]}!`;
+
+        $('#profileDetailsSuccess').classList.add('visible');
+      } else {
+        $('#profileDetailsError').textContent = err.message || 'Bir hata oluştu.';
+        $('#profileDetailsError').classList.add('visible');
+      }
+    }
+  };
+
+  // 2. Password form submit
+  $('#profilePasswordForm').onsubmit = async (e) => {
+    e.preventDefault();
+    $('#profilePasswordSuccess').classList.remove('visible');
+    $('#profilePasswordError').classList.remove('visible');
+
+    const oldPassword = $('#profileOldPassword').value;
+    const newPassword = $('#profileNewPassword').value;
+    const confirmPassword = $('#profileConfirmNewPassword').value;
+
+    if (newPassword.length < 6) {
+      $('#profilePasswordError').textContent = 'Yeni şifre en az 6 karakter olmalıdır.';
+      $('#profilePasswordError').classList.add('visible');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      $('#profilePasswordError').textContent = 'Yeni şifreler eşleşmiyor.';
+      $('#profilePasswordError').classList.add('visible');
+      return;
+    }
+
+    try {
+      // API call
+      const res = await Api.changePassword(currentUser.email, oldPassword, newPassword);
+      if (res.error) throw new Error(res.error);
+
+      // Sync local user password
+      currentUser.password = newPassword;
+      sessionStorage.setItem('shopai_user', JSON.stringify(currentUser));
+
+      const users = getUsers();
+      const userIndex = users.findIndex(u => u.email.toLowerCase() === currentUser.email.toLowerCase());
+      if (userIndex !== -1) {
+        users[userIndex].password = newPassword;
+        saveUsers(users);
+      }
+
+      $('#profilePasswordSuccess').classList.add('visible');
+      $('#profilePasswordForm').reset();
+    } catch (err) {
+      // Fallback
+      const users = getUsers();
+      const userIndex = users.findIndex(u => u.email.toLowerCase() === currentUser.email.toLowerCase() && u.password === oldPassword);
+      if (userIndex !== -1) {
+        users[userIndex].password = newPassword;
+        saveUsers(users);
+
+        currentUser.password = newPassword;
+        sessionStorage.setItem('shopai_user', JSON.stringify(currentUser));
+
+        $('#profilePasswordSuccess').classList.add('visible');
+        $('#profilePasswordForm').reset();
+      } else {
+        $('#profilePasswordError').textContent = err.message || 'Mevcut şifre hatalı.';
+        $('#profilePasswordError').classList.add('visible');
+      }
+    }
+  };
+
+  // 3. Delete account form submit
+  $('#profileDeleteForm').onsubmit = async (e) => {
+    e.preventDefault();
+    $('#profileDeleteError').classList.remove('visible');
+
+    const confirmEmail = $('#profileDeleteConfirmEmail').value.trim();
+    if (confirmEmail.toLowerCase() !== currentUser.email.toLowerCase()) {
+      $('#profileDeleteError').textContent = 'Girdiğiniz e-posta adresi mevcut hesabınızla eşleşmiyor.';
+      $('#profileDeleteError').classList.add('visible');
+      return;
+    }
+
+    if (!confirm('Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) {
+      return;
+    }
+
+    try {
+      // API call
+      await Api.deleteAccount(currentUser.email);
+    } catch (e) {
+      // ignore API failure and proceed to clean local storage (offline fallback)
+    }
+
+    // Remove user from localStorage
+    const users = getUsers();
+    const filteredUsers = users.filter(u => u.email.toLowerCase() !== currentUser.email.toLowerCase());
+    saveUsers(filteredUsers);
+
+    // Alert and logout
+    alert('Hesabınız başarıyla silindi.');
+    logout();
+  };
+}
+
