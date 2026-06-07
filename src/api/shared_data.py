@@ -286,7 +286,7 @@ def remove_from_cart(user_email, product_id):
     return get_cart(user_email)
 
 
-def create_order(user_email):
+def create_order(user_email, shipping_address=None, payment_method=None):
     """Sepetteki ürünlerden sipariş oluştur"""
     cart_data = get_cart(user_email)
     if not cart_data["items"]:
@@ -300,7 +300,9 @@ def create_order(user_email):
         "shipping": cart_data["shipping"],
         "total": cart_data["total"],
         "status": "processing",
-        "user_email": user_email
+        "user_email": user_email,
+        "shipping_address": shipping_address,
+        "payment_method": payment_method
     }
     
     orders_db.insert(0, order)
@@ -312,6 +314,15 @@ def create_order(user_email):
 def get_user_orders(user_email):
     """Kullanıcının siparişlerini getir"""
     return [o for o in orders_db if o["user_email"] == user_email]
+
+
+def cancel_order(user_email, order_id):
+    """Siparişi iptal et"""
+    order = next((o for o in orders_db if o["user_email"].lower() == user_email.lower() and o["id"] == order_id), None)
+    if not order:
+        return {"error": "Sipariş bulunamadı."}
+    order["status"] = "cancelled"
+    return {"success": True, "order": order}
 
 
 def log_interaction(user_id, product_id, interaction_type):
@@ -337,3 +348,36 @@ def get_system_stats():
         "python_version": "3.14.3",
         "uptime": datetime.now().isoformat()
     }
+
+
+def update_user_details(email, name):
+    """Kullanıcının adını/soyadını güncelle"""
+    user = next((u for u in users_db if u["email"].lower() == email.lower()), None)
+    if not user:
+        return {"error": "Kullanıcı bulunamadı."}
+    user["name"] = name
+    return {"success": True, "user": {k: v for k, v in user.items() if k != "password"}}
+
+
+def change_user_password(email, old_password, new_password):
+    """Kullanıcının şifresini değiştir"""
+    user = next((u for u in users_db if u["email"].lower() == email.lower()), None)
+    if not user:
+        return {"error": "Kullanıcı bulunamadı."}
+    print(f"DEBUG change_user_password: user password={repr(user['password'])}, old password={repr(old_password)}")
+    if user["password"] != old_password:
+        return {"error": "Mevcut şifre hatalı."}
+    user["password"] = new_password
+    return {"success": True}
+
+
+def delete_user_account(email):
+    """Kullanıcı hesabını sil"""
+    user = next((u for u in users_db if u["email"].lower() == email.lower()), None)
+    if not user:
+        return {"error": "Kullanıcı bulunamadı."}
+    users_db[:] = [u for u in users_db if u["email"].lower() != email.lower()]
+    if email in carts_db:
+        del carts_db[email]
+    return {"success": True}
+
