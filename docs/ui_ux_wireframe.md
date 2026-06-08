@@ -33,9 +33,9 @@ Kullanıcı bir ürünü incelerken, o ürünün kategorisi ve özelliklerine be
 ---
 
 ## 3. Teknik Entegrasyon Detayları
-* [cite_start]**Framework:** Arayüz için **Streamlit** veya basit bir **React** uygulaması tercih edilecektir[cite: 31, 70].
-* [cite_start]**Veri Akışı:** Kullanıcı etkileşimleri (tıklama, sepete ekleme) PostgreSQL veritabanına kaydedilecek ve öneri motoru bu verileri gerçek zamanlı veya periyodik olarak işleyecektir[cite: 26, 27].
-* [cite_start]**API:** Modelden gelen öneriler `GET /recommendations/{user_id}` uç noktası üzerinden FastAPI ile arayüze çekilecektir[cite: 30, 48].
+* **Framework:** Arayüz, **Vanilla HTML/CSS/JavaScript** kullanılarak geliştirilmiştir.
+* **Veri Akışı:** Kullanıcı etkileşimleri (tıklama, sepete ekleme) PostgreSQL veritabanına kaydedilecek ve öneri motoru bu verileri gerçek zamanlı veya periyodik olarak işleyecektir.
+* **API:** Modelden gelen öneriler `GET /recommendations/{user_id}` uç noktası üzerinden FastAPI ile arayüze çekilecektir.
 
 ---
 

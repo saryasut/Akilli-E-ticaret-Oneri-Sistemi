@@ -1,4 +1,4 @@
-# Veri Vizyonerler - Proje Akışı ve Haftalık İlerleme .
+# Veri Vizyonerler — Proje Akışı ve Haftalık İlerleme
 
 Bu doküman ekip üyelerinin görev dağılımını ve haftalık proje ilerlemelerini içermektedir.
 
@@ -18,13 +18,13 @@ Bu sistem kullanıcı deneyimini iyileştirmeyi ve satışları artırmayı hede
 
 ---
 
-# Kullanılacak Teknolojiler
+# Kullanılan Teknolojiler
 
-- Python
-- Pandas
-- Scikit-learn
-- Flask
+- Python 3.14
+- Pandas, NumPy, Scikit-learn
+- FastAPI (Production) / Flask (Alternatif)
 - PostgreSQL
+- Vanilla HTML/CSS/JavaScript
 
 ---
 
@@ -76,7 +76,7 @@ Projenin akademik ve teknik altyapısını oluşturmak amacıyla yapılan kapsam
 Proje veri gereksinimlerine uygun olarak PostgreSQL için veritabanı şema tasarımı oluşturuldu.
 
 **Gerçekleştirilen Teknik Detaylar:**
-- **Tablo Tasarımı:** users, products, categories, orders, order_items ve ratings olmak üzere 6 tablo tasarlandı.
+- **Tablo Tasarımı:** users, products, orders, order_items ve interactions olmak üzere 5 tablo tasarlandı.
 - **İlişkiler:** Tablolar arasındaki foreign key ilişkileri belirlendi ve diyagrama yansıtıldı.
 - **Diyagram:** dbdiagram.io aracı kullanılarak görsel şema diyagramı oluşturuldu ve PNG olarak dışa aktarıldı.
 - **Yükleme:** Şema diyagramı GitHub reposuna yüklendi.
@@ -121,7 +121,7 @@ E-ticaret öneri sisteminin kullanıcı arayüzü (UI) ve kullanıcı deneyimi (
 - **Kullanıcı Yolculuğu:** Önerilerin ana sayfa, ürün detay ve sepet sayfalarındaki yerleşimi planlandı.
 - **Bileşen Tasarımı:** "Sizin İçin Seçtiklerimiz" ve "Benzer Ürünler" bölümleri için tel kafes (wireframe) yapıları oluşturuldu.
 - **Strateji:** Kullanıcının alışveriş akışını bozmadan, sepet ortalamasını artırmaya yönelik çapraz satış (cross-sell) noktaları belirlendi.
-- **Teknoloji Kararı:** Arayüzün geliştirilmesinde Python ile tam uyumlu çalışan Streamlit veya FastAPI/React ikilisinin kullanılması kararlaştırıldı.
+- **Teknoloji Kararı:** Arayüz, Vanilla HTML/CSS/JavaScript kullanılarak geliştirildi.
 
 
 ---
@@ -345,7 +345,8 @@ Geliştirilen Flask API üzerinde stres ve hata testleri yapılmıştır:
 * Hataların log dosyasına "ERROR" seviyesinde doğru şekilde işlendiği onaylandı.
 
 ### 📊 Projenin Güncel Durumu
-* **Backend:** Flask tabanlı REST API çalışır durumda.
+* **Backend:** FastAPI (production) ve Flask (alternatif) tabanlı REST API çalışır durumda.
+* **Frontend:** Rol tabanlı SPA arayüzü (Admin / Kullanıcı) tamamlandı.
 * **Veri:** Temizlenmiş ve işlenmiş veri seti analizi hazır.
 * **Dokümantasyon:** Proje akışı ve haftalık raporlar eksiksiz tamamlandı.
 
