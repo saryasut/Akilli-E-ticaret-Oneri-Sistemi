@@ -3,10 +3,11 @@
 // Role-Based Frontend Application Controller
 // ═══════════════════════════════════════════════
 
-// API URL — Render'da environment variable'dan, lokalde localhost:8000'den alır
-const API_BASE = window.SHOPAI_API_URL || (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-  ? 'http://localhost:8000'
-  : `https://e-commerce-recommendation-api.onrender.com`);
+// API URL — Render canlı adresini kullanır, lokalde ise localhost:8000'e düşer
+const API_BASE = window.SHOPAI_API_URL || 
+  (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    ? 'http://localhost:8000'
+    : 'https://akilli-e-ticaret-oneri-sistemi-rtqm.onrender.com');
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
